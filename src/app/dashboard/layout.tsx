@@ -17,6 +17,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Role } from "@/generated/prisma";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function DashboardLayout({
     children,
@@ -25,9 +26,7 @@ export default function DashboardLayout({
 }>) {
     const [isOpen, setIsOpen] = useState(false);
     const pathname = usePathname();
-    const { data: session } = useSession();
-
-    const navItems = [
+    const { data: session } = useSession(); const navItems = [
         {
             title: "Dashboard",
             href: "/dashboard",
@@ -37,6 +36,12 @@ export default function DashboardLayout({
         {
             title: "Antrean",
             href: "/dashboard/queue",
+            icon: <ClipboardList size={20} />,
+            allowedRoles: [Role.ADMIN, Role.SUPERADMIN],
+        },
+        {
+            title: "Semua Antrean",
+            href: "/dashboard/all-queues",
             icon: <ClipboardList size={20} />,
             allowedRoles: [Role.ADMIN, Role.SUPERADMIN],
         },
@@ -82,7 +87,7 @@ export default function DashboardLayout({
             {/* Sidebar */}
             <aside
                 className={cn(
-                    "bg-sidebar text-sidebar-foreground w-full md:w-64 md:min-h-screen transition-all duration-300 ease-in-out",
+                    "bg-sidebar text-sidebar-background w-full md:w-64 md:min-h-screen transition-all duration-300 ease-in-out",
                     isOpen ? "block fixed inset-0 z-40" : "hidden md:block"
                 )}
             >
@@ -113,9 +118,7 @@ export default function DashboardLayout({
                                     <span>{item.title}</span>
                                 </Link>
                             ))}
-                    </div>
-
-                    <div className="p-4 border-sidebar-border border-t">
+                    </div>                    <div className="p-4 border-sidebar-border border-t">
                         <div className="flex justify-between items-center mb-2">
                             <div>
                                 <p className="font-medium">{session?.user?.name}</p>
@@ -123,6 +126,7 @@ export default function DashboardLayout({
                                     {session?.user?.role === Role.SUPERADMIN ? "Super Admin" : "Admin"}
                                 </p>
                             </div>
+                            <ThemeToggle />
                         </div>
                         <Button
                             variant="outline"
