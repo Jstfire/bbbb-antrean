@@ -7,4 +7,8 @@
 DATABASE_URL="postgresql://root:@localhost:5432/db_antrean"
 NEXTAUTH_SECRET="your-super-secret-key-for-next-auth"
 NEXT_PUBLIC_AUTH_URL="http://localhost:3000"
-NEXT_PUBLIC_STATIC_UUID="uuid-16-characters"
+NEXT_PUBLIC_STATIC_UUID="uuid 16char punyamu"
+
+# WhatsApp Bot API Configuration
+NEXT_PUBLIC_WA_API_URL="wa_api_service_punyamu.com"
+NEXT_PUBLIC_WA_ADMIN_KEY="contoh_admin_key"
