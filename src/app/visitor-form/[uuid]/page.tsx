@@ -14,6 +14,7 @@ import { ServiceStatus } from "@/generated/prisma";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, CheckCircle, Clock, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ClientCurrentTime, ClientTimestamp } from "@/components/client-timestamp";
 
 interface Service {
     id: string;
@@ -366,7 +367,7 @@ export default function VisitorFormPage({ params }: { params: Promise<{ uuid: st
                                             Anda sedang dalam proses pelayanan
                                         </p>
                                         <p className="text-blue-700 text-sm">
-                                            Mulai dilayani: {new Date(trackingInfo.startTime as string).toLocaleTimeString('id-ID')}
+                                            Mulai dilayani: <ClientTimestamp timestamp={trackingInfo.startTime} format="time" locale="id-ID" />
                                         </p>
                                     </div>
                                 </div>
@@ -427,7 +428,7 @@ export default function VisitorFormPage({ params }: { params: Promise<{ uuid: st
 
                     </CardContent>                    <CardFooter className="flex justify-center">
                         <p className="text-muted-foreground text-xs text-center">
-                            Status antrean diperbarui secara otomatis setiap 30 detik. Terakhir diperbarui: {new Date().toLocaleTimeString('id-ID')}
+                            Status antrean diperbarui secara otomatis setiap 30 detik. Terakhir diperbarui: <ClientCurrentTime locale="id-ID" />
                         </p>
                     </CardFooter>
                 </Card>

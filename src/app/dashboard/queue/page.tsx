@@ -38,6 +38,7 @@ import {
 	sendWhatsAppBotReminder,
 } from "@/lib/reminder-service";
 import TableSkeleton from "@/components/ui/table-skeleton";
+import { ClientOnlyCurrentTime } from "@/components/client-only-time";
 
 interface Queue {
 	id: string;
@@ -71,19 +72,10 @@ export default function QueueManagementPage() {
 	const [nextInQueue, setNextInQueue] = useState<Queue | null>(null);
 	const [showRemindSkdDialog, setShowRemindSkdDialog] = useState(false);
 	const [selectedQueue, setSelectedQueue] = useState<Queue | null>(null);
-	const [reminderMessage, setReminderMessage] = useState("");
-	const [isSendingReminder, setIsSendingReminder] = useState(false);
+	const [reminderMessage, setReminderMessage] = useState(""); const [isSendingReminder, setIsSendingReminder] = useState(false);
 	const [reminderError, setReminderError] = useState<string | null>(null);
 	const [dataHash, setDataHash] = useState<string>("");
 	const [needsRefresh, setNeedsRefresh] = useState<boolean>(false);
-	const [lastUpdatedPerTab, setLastUpdatedPerTab] = useState<
-		Record<QueueStatus, Date | null>
-	>({
-		WAITING: null,
-		SERVING: null,
-		COMPLETED: null,
-		CANCELED: null,
-	});
 
 	// Efficient polling with change detection
 	const pollForChanges = useCallback(async () => {
@@ -96,16 +88,10 @@ export default function QueueManagementPage() {
 			);
 
 			if (response.ok) {
-				const data = await response.json();
-
-				// Only update the queue data if there are changes
+				const data = await response.json();				// Only update the queue data if there are changes
 				if (data.hasChanges) {
 					setQueues(data.queues);
 					setDataHash(data.hash);
-					setLastUpdatedPerTab((prev) => ({
-						...prev,
-						[activeTab]: new Date(),
-					}));
 				}
 			}
 		} catch (error) {
@@ -117,12 +103,10 @@ export default function QueueManagementPage() {
 			setLoading(true);
 			const response = await fetch(`/api/queue?status=${status}`, {
 				credentials: "include", // Include credentials for authentication
-			});
-			if (response.ok) {
+			}); if (response.ok) {
 				const data = await response.json();
 				setQueues(data.queues);
 				setDataHash(data.hash || "");
-				setLastUpdatedPerTab((prev) => ({ ...prev, [status]: new Date() }));
 			} else {
 				toast.error("Gagal memuat daftar antrean");
 			}
@@ -566,20 +550,11 @@ export default function QueueManagementPage() {
 					<TabsTrigger value="SERVING">Sedang Dilayani</TabsTrigger>
 					<TabsTrigger value="COMPLETED">Selesai</TabsTrigger>
 					<TabsTrigger value="CANCELED">Dibatalkan</TabsTrigger>
-				</TabsList>
-
-				{/* WAITING Tab */}
+				</TabsList>				{/* WAITING Tab */}
 				<TabsContent value="WAITING">
-					{lastUpdatedPerTab.WAITING && (
-						<div className="mb-2 text-muted-foreground text-xs">
-							Terakhir diperbarui:{" "}
-							{lastUpdatedPerTab.WAITING.toLocaleTimeString("id-ID", {
-								hour: "2-digit",
-								minute: "2-digit",
-								second: "2-digit",
-							})}
-						</div>
-					)}
+					<div className="mb-2 text-muted-foreground text-xs">
+						Terakhir diperbarui: <ClientOnlyCurrentTime fallback="-" />
+					</div>
 					<Card>
 						<CardHeader>
 							<CardTitle>Antrean Menunggu</CardTitle>
@@ -606,18 +581,10 @@ export default function QueueManagementPage() {
 					</Card>
 				</TabsContent>
 
-				{/* SERVING Tab */}
-				<TabsContent value="SERVING">
-					{lastUpdatedPerTab.SERVING && (
-						<div className="mb-2 text-muted-foreground text-xs">
-							Terakhir diperbarui:{" "}
-							{lastUpdatedPerTab.SERVING.toLocaleTimeString("id-ID", {
-								hour: "2-digit",
-								minute: "2-digit",
-								second: "2-digit",
-							})}
-						</div>
-					)}
+				{/* SERVING Tab */}				<TabsContent value="SERVING">
+					<div className="mb-2 text-muted-foreground text-xs">
+						Terakhir diperbarui: <ClientOnlyCurrentTime fallback="-" />
+					</div>
 					<Card>
 						<CardHeader>
 							<CardTitle>Antrean Sedang Dilayani</CardTitle>
@@ -644,18 +611,10 @@ export default function QueueManagementPage() {
 					</Card>
 				</TabsContent>
 
-				{/* COMPLETED Tab */}
-				<TabsContent value="COMPLETED">
-					{lastUpdatedPerTab.COMPLETED && (
-						<div className="mb-2 text-muted-foreground text-xs">
-							Terakhir diperbarui:{" "}
-							{lastUpdatedPerTab.COMPLETED.toLocaleTimeString("id-ID", {
-								hour: "2-digit",
-								minute: "2-digit",
-								second: "2-digit",
-							})}
-						</div>
-					)}
+				{/* COMPLETED Tab */}				<TabsContent value="COMPLETED">
+					<div className="mb-2 text-muted-foreground text-xs">
+						Terakhir diperbarui: <ClientOnlyCurrentTime fallback="-" />
+					</div>
 					<Card>
 						<CardHeader>
 							<CardTitle>Antrean Selesai</CardTitle>
@@ -682,18 +641,10 @@ export default function QueueManagementPage() {
 					</Card>
 				</TabsContent>
 
-				{/* CANCELED Tab */}
-				<TabsContent value="CANCELED">
-					{lastUpdatedPerTab.CANCELED && (
-						<div className="mb-2 text-muted-foreground text-xs">
-							Terakhir diperbarui:{" "}
-							{lastUpdatedPerTab.CANCELED.toLocaleTimeString("id-ID", {
-								hour: "2-digit",
-								minute: "2-digit",
-								second: "2-digit",
-							})}
-						</div>
-					)}
+				{/* CANCELED Tab */}				<TabsContent value="CANCELED">
+					<div className="mb-2 text-muted-foreground text-xs">
+						Terakhir diperbarui: <ClientOnlyCurrentTime fallback="-" />
+					</div>
 					<Card>
 						<CardHeader>
 							<CardTitle>Antrean Dibatalkan</CardTitle>

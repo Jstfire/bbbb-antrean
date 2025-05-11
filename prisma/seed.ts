@@ -27,7 +27,7 @@ async function main() {
 	await QRCode.toFile(qrCodePath, qrCodeUrl, {
 		color: {
 			dark: "#9A0501",
-			light: "#FFF4EC",
+			light: "#FFE5D3",
 		},
 		width: 300,
 		margin: 1,

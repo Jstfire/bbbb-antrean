@@ -96,7 +96,7 @@ export default function Home() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="submit" className="w-full font-bold text-[#fff]" disabled={isLoading}>
                   {isLoading ? "Logging in..." : "Login"}
                 </Button>
               </form>

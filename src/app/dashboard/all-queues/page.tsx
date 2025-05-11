@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, RefreshCw } from "lucide-react";
 import TableSkeleton from "@/components/ui/table-skeleton";
+import { ClientOnlyCurrentTime } from "@/components/client-only-time";
 
 interface Queue {
     id: string;
@@ -106,9 +107,7 @@ export default function AllQueuesPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [sortColumn, setSortColumn] = useState<string>("queueNumber");
-    const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-    const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-    const [dataHash, setDataHash] = useState<string>("");
+    const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc"); const [dataHash, setDataHash] = useState<string>("");
     const [needsRefresh, setNeedsRefresh] = useState<boolean>(false);
 
     // New ref for dataHash
@@ -174,7 +173,6 @@ export default function AllQueuesPage() {
                 const data = await response.json();
                 setQueues(data.queues);
                 setDataHash(data.hash || "");
-                setLastUpdated(new Date());
                 // REMOVED: filterAndSortQueues(); call
             } else {
                 toast.error("Gagal memuat data antrean");
@@ -208,11 +206,9 @@ export default function AllQueuesPage() {
         try {
             const response = await fetch(`/api/queue/all`); // Fetches all queues and new hash
             if (response.ok) {
-                const data = await response.json();
-                if (data.hash && data.hash !== dataHashRef.current) {
+                const data = await response.json(); if (data.hash && data.hash !== dataHashRef.current) {
                     setQueues(data.queues); // Update queues
                     setDataHash(data.hash); // Update hash, will trigger dataHashRef update
-                    setLastUpdated(new Date()); // Update last updated time
                 }
             }
         } catch (error) {
@@ -407,10 +403,9 @@ export default function AllQueuesPage() {
                             )}
                         </Button>
                     </div>
-                </div>
-                <div className="text-muted-foreground text-xs">
-                    Terakhir diperbarui: {lastUpdated.toLocaleTimeString("id-ID")}
-                </div>                <CardContent className="p-0">
+                </div>                <div className="text-muted-foreground text-xs">
+                    Terakhir diperbarui: <ClientOnlyCurrentTime fallback="-" />
+                </div><CardContent className="p-0">
                     {loading ? (
                         <TableSkeleton columns={6} rows={10} />
                     ) : filteredQueues.length === 0 ? (

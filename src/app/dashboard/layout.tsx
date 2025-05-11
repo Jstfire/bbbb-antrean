@@ -111,7 +111,7 @@ export default function DashboardLayout({
                                     className={cn(
                                         "flex items-center space-x-2 px-4 py-2 rounded-md transition-colors",
                                         pathname === item.href
-                                            ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                                            ? "bg-sidebar-primary font-bold"
                                             : "hover:bg-sidebar-accent/30"
                                     )}
                                 >
