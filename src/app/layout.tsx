@@ -4,6 +4,7 @@ import "./globals.css";
 import AuthProvider from "@/components/auth/auth-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
+import LoadingTransition from "@/components/loading-transition";
 
 const lato = Lato({
   weight: ["100", "300", "400", "700", "900"],
@@ -26,7 +27,9 @@ export default function RootLayout({
       <body className={`${lato.variable} font-lato antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <AuthProvider>
-            {children}
+            <LoadingTransition>
+              {children}
+            </LoadingTransition>
             <Toaster />
           </AuthProvider>
         </ThemeProvider>

@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Role } from "@/generated/prisma";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
+import NotificationsDropdown from "@/components/dashboard/notifications-dropdown";
 
 export default function DashboardLayout({
     children,
@@ -126,7 +127,10 @@ export default function DashboardLayout({
                                     {session?.user?.role === Role.SUPERADMIN ? "Super Admin" : "Admin"}
                                 </p>
                             </div>
-                            <ThemeToggle />
+                            <div className="flex items-center space-x-2">
+                                <NotificationsDropdown />
+                                <ThemeToggle />
+                            </div>
                         </div>
                         <Button
                             variant="outline"

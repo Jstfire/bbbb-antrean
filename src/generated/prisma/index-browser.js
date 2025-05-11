@@ -159,7 +159,9 @@ exports.Prisma.QueueScalarFieldEnum = {
   endTime: 'endTime',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
-  tempUuid: 'tempUuid'
+  tempUuid: 'tempUuid',
+  filledSKD: 'filledSKD',
+  trackingLink: 'trackingLink'
 };
 
 exports.Prisma.QRCodeScalarFieldEnum = {
@@ -177,6 +179,17 @@ exports.Prisma.TempVisitorLinkScalarFieldEnum = {
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   used: 'used'
+};
+
+exports.Prisma.NotificationScalarFieldEnum = {
+  id: 'id',
+  type: 'type',
+  title: 'title',
+  message: 'message',
+  isRead: 'isRead',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  userId: 'userId'
 };
 
 exports.Prisma.SortOrder = {
@@ -216,7 +229,8 @@ exports.Prisma.ModelName = {
   Visitor: 'Visitor',
   Queue: 'Queue',
   QRCode: 'QRCode',
-  TempVisitorLink: 'TempVisitorLink'
+  TempVisitorLink: 'TempVisitorLink',
+  Notification: 'Notification'
 };
 
 /**

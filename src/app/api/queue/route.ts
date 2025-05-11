@@ -2,8 +2,17 @@ import { PrismaClient, QueueStatus } from "@/generated/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { createHash } from "crypto";
 
 const prisma = new PrismaClient();
+
+// Function to generate a hash of queue data to detect changes
+function generateQueueHash(queues: Record<string, unknown>[]): string {
+	// Create a string representation of the queues
+	const queueString = JSON.stringify(queues);
+	// Generate SHA-256 hash
+	return createHash("sha256").update(queueString).digest("hex");
+}
 
 export async function GET(req: NextRequest) {
 	try {
@@ -16,6 +25,7 @@ export async function GET(req: NextRequest) {
 		// Get status query parameter
 		const url = new URL(req.url);
 		const statusParam = url.searchParams.get("status") as QueueStatus | null;
+		const clientHash = url.searchParams.get("hash") || "";
 
 		// Default to WAITING if no status provided
 		const status = statusParam || QueueStatus.WAITING;
@@ -23,7 +33,6 @@ export async function GET(req: NextRequest) {
 		// Get today's date (start of day)
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
-
 		// Get queues with the specified status for today
 		const queues = await prisma.queue.findMany({
 			where: {
@@ -56,7 +65,17 @@ export async function GET(req: NextRequest) {
 			},
 		});
 
-		return NextResponse.json({ queues });
+		// Generate a hash of the current data
+		const serverHash = generateQueueHash(queues);
+
+		// Check if the data has changed
+		const hasChanges = !clientHash || clientHash !== serverHash;
+
+		return NextResponse.json({
+			queues,
+			hash: serverHash,
+			hasChanges,
+		});
 	} catch (error) {
 		console.error("Error fetching queues:", error);
 		return NextResponse.json(

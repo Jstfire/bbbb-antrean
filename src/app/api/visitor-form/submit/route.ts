@@ -1,5 +1,6 @@
 import { PrismaClient, QueueStatus } from "@/generated/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { nanoid } from "nanoid";
 
 const prisma = new PrismaClient();
 
@@ -39,11 +40,11 @@ export async function POST(req: NextRequest) {
 		if (new Date() > tempVisitorLink.expiresAt) {
 			return NextResponse.json({ error: "Link has expired" }, { status: 400 });
 		}
-
-		// Get the latest queue number for today
+		// Get the latest queue number for today (resetting to 1 each day)
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 
+		// Check if we already have queues for today
 		const latestQueue = await prisma.queue.findFirst({
 			where: {
 				createdAt: {
@@ -55,8 +56,8 @@ export async function POST(req: NextRequest) {
 			},
 		});
 
+		// If it's a new day, start from 1, otherwise increment from the last queue number
 		const nextQueueNumber = latestQueue ? latestQueue.queueNumber + 1 : 1;
-
 		// Transaction to create visitor and queue
 		const result = await prisma.$transaction(async (tx) => {
 			// Create visitor
@@ -69,6 +70,9 @@ export async function POST(req: NextRequest) {
 				},
 			});
 
+			// Generate a tracking link
+			const trackingLink = `${nanoid(10)}`;
+
 			// Create queue
 			const queue = await tx.queue.create({
 				data: {
@@ -77,6 +81,8 @@ export async function POST(req: NextRequest) {
 					visitorId: visitor.id,
 					serviceId,
 					tempUuid: tempUuid,
+					trackingLink: trackingLink,
+					filledSKD: false,
 				},
 				include: {
 					service: true,
@@ -89,9 +95,18 @@ export async function POST(req: NextRequest) {
 				data: { used: true },
 			});
 
+			// Create notification for staff
+			await tx.notification.create({
+				data: {
+					type: "NEW_QUEUE",
+					title: "Antrean Baru",
+					message: `Antrean baru #${queue.queueNumber} dari ${visitor.name} untuk layanan ${queue.service.name}`,
+					isRead: false,
+				},
+			});
+
 			return { visitor, queue };
 		});
-
 		return NextResponse.json({
 			success: true,
 			message: "Queue created successfully",
@@ -99,6 +114,7 @@ export async function POST(req: NextRequest) {
 				queueNumber: result.queue.queueNumber,
 				serviceName: result.queue.service.name,
 				visitorName: result.visitor.name,
+				redirectUrl: `/visitor-form/${tempUuid}`,
 			},
 		});
 	} catch (error) {

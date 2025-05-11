@@ -29,14 +29,15 @@ enum ServiceStatus {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  username  String   @unique
-  password  String
-  name      String
-  role      Role     @default(ADMIN)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  queues    Queue[]  @relation("AdminQueue")
+  id            String         @id @default(uuid())
+  username      String         @unique
+  password      String
+  name          String
+  role          Role           @default(ADMIN)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  queues        Queue[]        @relation("AdminQueue")
+  notifications Notification[]
 }
 
 model Service {
@@ -60,20 +61,22 @@ model Visitor {
 }
 
 model Queue {
-  id          String      @id @default(uuid())
-  queueNumber Int
-  status      QueueStatus @default(WAITING)
-  visitorId   String
-  visitor     Visitor     @relation(fields: [visitorId], references: [id])
-  serviceId   String
-  service     Service     @relation(fields: [serviceId], references: [id])
-  adminId     String?
-  admin       User?       @relation("AdminQueue", fields: [adminId], references: [id])
-  startTime   DateTime?
-  endTime     DateTime?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  tempUuid    String?     @unique
+  id           String      @id @default(uuid())
+  queueNumber  Int
+  status       QueueStatus @default(WAITING)
+  visitorId    String
+  visitor      Visitor     @relation(fields: [visitorId], references: [id])
+  serviceId    String
+  service      Service     @relation(fields: [serviceId], references: [id])
+  adminId      String?
+  admin        User?       @relation("AdminQueue", fields: [adminId], references: [id])
+  startTime    DateTime?
+  endTime      DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  tempUuid     String?     @unique
+  filledSKD    Boolean     @default(false)
+  trackingLink String?     @unique
 
   @@index([visitorId])
   @@index([serviceId])
@@ -95,4 +98,18 @@ model TempVisitorLink {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   used      Boolean  @default(false)
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  type      String // NEW_QUEUE, REMINDER_SKD, etc.
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String? // Optional, if notification is targeted to specific user
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }

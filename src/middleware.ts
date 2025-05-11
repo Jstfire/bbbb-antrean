@@ -10,6 +10,25 @@ export async function middleware(request: NextRequest) {
 		(publicPath) => path === publicPath || path.startsWith(`${publicPath}/`)
 	);
 
+	// Check for visitor form preload redirection
+	const visitorFormRegex = /^\/visitor-form\/([^\/]+)$/;
+	const match = path.match(visitorFormRegex);
+	if (match && !path.includes("/preload")) {
+		const uuid = match[1];
+
+		// Don't redirect if this is an API call, asset, or internal Next.js route
+		if (
+			request.headers.get("accept")?.includes("text/html") &&
+			!request.headers.get("x-next-data") &&
+			!request.nextUrl.searchParams.has("_rsc") &&
+			!request.nextUrl.searchParams.has("_next")
+		) {
+			return NextResponse.redirect(
+				new URL(`/visitor-form/preload?uuid=${uuid}`, request.url)
+			);
+		}
+	}
+
 	// Get session token
 	const token = await getToken({
 		req: request,

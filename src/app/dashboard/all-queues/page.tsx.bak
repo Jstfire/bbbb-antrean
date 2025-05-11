@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
@@ -111,14 +111,6 @@ export default function AllQueuesPage() {
     const [dataHash, setDataHash] = useState<string>("");
     const [needsRefresh, setNeedsRefresh] = useState<boolean>(false);
 
-    // New ref for dataHash
-    const dataHashRef = useRef(dataHash);
-
-    // Effect to keep dataHashRef updated
-    useEffect(() => {
-        dataHashRef.current = dataHash;
-    }, [dataHash]);
-
     // Dialog states
     const [showDetailsDialog, setShowDetailsDialog] = useState(false);
     const [selectedQueue, setSelectedQueue] = useState<Queue | null>(null);
@@ -164,18 +156,23 @@ export default function AllQueuesPage() {
         setFilteredQueues(result);
         // Reset to first page when filters change
         setCurrentPage(1);
-    }, [queues, searchTerm, statusFilter, sortColumn, sortDirection]);
-
+    }, [queues, searchTerm, statusFilter, sortColumn, sortDirection]);    // Apply filters whenever source data or filters change    // Load queue data with optimized caching
     const fetchAllQueues = useCallback(async () => {
         try {
-            // setLoading(true); // setLoading is handled by callers
-            const response = await fetch(`/api/queue/all`);
+            setLoading(true);
+            const response = await fetch(`/api/queue/all${dataHash ? `?hash=${dataHash}` : ''}`);
             if (response.ok) {
                 const data = await response.json();
-                setQueues(data.queues);
-                setDataHash(data.hash || "");
-                setLastUpdated(new Date());
-                // REMOVED: filterAndSortQueues(); call
+
+                // Only update if there are actual changes
+                if (data.hasChanges) {
+                    setQueues(data.queues);
+                    setDataHash(data.hash || "");
+                    setLastUpdated(new Date());
+                } else {
+                    // Just update the timestamp if data didn't change
+                    setLastUpdated(new Date());
+                }
             } else {
                 toast.error("Gagal memuat data antrean");
             }
@@ -183,63 +180,59 @@ export default function AllQueuesPage() {
             console.error("Error fetching queues:", error);
             toast.error("Terjadi kesalahan saat memuat data antrean");
         } finally {
-            // setLoading(false); // setLoading is handled by callers
+            setLoading(false);
         }
-    }, []); // Empty dependency array for stability
+    }, [dataHash]);
 
-    // Revised useEffect for filtering and sorting
+    // When queues change, apply filters
     useEffect(() => {
-        filterAndSortQueues();
-    }, [filterAndSortQueues]); // filterAndSortQueues dependency is correct
+        if (queues.length > 0) {
+            filterAndSortQueues();
+        }
+    }, [queues, searchTerm, statusFilter, sortColumn, sortDirection, filterAndSortQueues]);
 
-    // REMOVE EXISTING SSE useEffect BLOCK
-    // useEffect(() => {
-    //     setLoading(true);
-    //     fetchAllQueues();
-    //     const eventSource = new EventSource('/api/queue/updates');
-    //     const handleMessage = (event: MessageEvent) => { ... };
-    //     eventSource.addEventListener('message', handleMessage);
-    //     eventSource.onerror = (error) => { ... };
-    //     return () => { ... };
-    // }, [fetchAllQueues]);
+    // Initialize data and set up SSE connection that only updates on real changes
+    useEffect(() => {
+        // Initial data loading
+        fetchAllQueues();
 
-    // New polling function
-    const pollForAllQueuesChanges = useCallback(async () => {
-        try {
-            const response = await fetch(`/api/queue/all`); // Fetches all queues and new hash
-            if (response.ok) {
-                const data = await response.json();
-                if (data.hash && data.hash !== dataHashRef.current) {
-                    setQueues(data.queues); // Update queues
-                    setDataHash(data.hash); // Update hash, will trigger dataHashRef update
-                    setLastUpdated(new Date()); // Update last updated time
+        // Set up Server-Sent Events for real-time queue updates
+        const eventSource = new EventSource('/api/queue/updates');
+        // Handle real-time updates
+        const handleSSEMessage = (event: MessageEvent) => {
+            try {
+                const data = JSON.parse(event.data);
+
+                // Only trigger a refresh when data changes
+                if (data.type === 'QUEUE_UPDATED' && data.hash !== dataHash) {
+                    console.log("Queue data changed, refreshing");
+                    setNeedsRefresh(true);
+                } else if (data.type === 'KEEPALIVE') {
+                    // Ignore keepalive messages
+                    console.log("Received keepalive, no changes detected");
                 }
+            } catch (error) {
+                console.error("Error processing SSE message:", error);
             }
-        } catch (error) {
-            console.error("Error polling for all queues changes:", error);
-        }
-    }, []); // Stable, uses ref
-
-    // New useEffect for initial load and polling
-    useEffect(() => {
-        setLoading(true);
-        fetchAllQueues().finally(() => setLoading(false)); // Initial load
-
-        const intervalId = setInterval(pollForAllQueuesChanges, 30000); // Poll every 30 seconds
-
-        return () => {
-            clearInterval(intervalId); // Cleanup interval on unmount
         };
-    }, [fetchAllQueues, pollForAllQueuesChanges]); // Stable dependencies
 
-    // Handle manual refresh when needed (useEffect for needsRefresh)
+        // Set up event listener
+        eventSource.addEventListener('message', handleSSEMessage);
+
+        // Clean up
+        return () => {
+            console.log("Cleaning up SSE connection");
+            eventSource.removeEventListener('message', handleSSEMessage);
+            eventSource.close();
+        };
+    }, [fetchAllQueues, dataHash]);
+
+    // Handle manual refresh when needed
     useEffect(() => {
         if (needsRefresh) {
-            // setLoading(true); // setLoading is typically set by the caller of setNeedsRefresh (e.g., handleRefresh)
-            fetchAllQueues().finally(() => {
-                setLoading(false); // Ensure loading is set to false after fetch completes
-                setNeedsRefresh(false);
-            });
+            console.log("Refreshing data due to detected changes");
+            setNeedsRefresh(false);
+            fetchAllQueues();
         }
     }, [needsRefresh, fetchAllQueues]);
 
@@ -266,10 +259,8 @@ export default function AllQueuesPage() {
         setPageSize(parseInt(value, 10));
         setCurrentPage(1); // Reset to first page when page size changes
     }; const handleRefresh = () => {
-        if (loading) return; // Prevent multiple refreshes while already loading
-
         setLoading(true); // Show loading state immediately
-        setNeedsRefresh(true); // Trigger the useEffect for needsRefresh
+        setNeedsRefresh(true);
         toast.success("Memperbarui data antrean...");
     };
 
@@ -391,20 +382,11 @@ export default function AllQueuesPage() {
                                     <SelectItem value="100">100</SelectItem>
                                 </SelectContent>
                             </Select>
-                        </div>                        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
-                            {loading ? (
-                                <>
-                                    <span className="mr-2 animate-spin">
-                                        <RefreshCw className="w-4 h-4" />
-                                    </span>
-                                    Memperbarui...
-                                </>
-                            ) : (
-                                <>
-                                    <RefreshCw className="mr-2 w-4 h-4" />
-                                    Perbarui
-                                </>
-                            )}
+                        </div>
+
+                        <Button variant="outline" size="sm" onClick={handleRefresh}>
+                            <RefreshCw className="mr-2 w-4 h-4" />
+                            Perbarui
                         </Button>
                     </div>
                 </div>

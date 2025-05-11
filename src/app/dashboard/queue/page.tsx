@@ -1,334 +1,837 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 import { QueueStatus, Role } from "@/generated/prisma";
 import { formatDistance } from "date-fns";
 import { id } from "date-fns/locale";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+	Dialog,
+	DialogContent,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import { Smartphone, MessageSquareText, AlertCircle, RefreshCw } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+	sendWhatsAppDirectReminder,
+	sendWhatsAppBotReminder,
+} from "@/lib/reminder-service";
+import TableSkeleton from "@/components/ui/table-skeleton";
 
 interface Queue {
-    id: string;
-    queueNumber: number;
-    status: QueueStatus;
-    createdAt: string;
-    startTime: string | null;
-    endTime: string | null;
-    visitor: {
-        name: string;
-        phone: string;
-        institution: string | null;
-    };
-    service: {
-        name: string;
-    };
-    admin: {
-        name: string;
-    } | null;
+	id: string;
+	queueNumber: number;
+	status: QueueStatus;
+	createdAt: string;
+	startTime: string | null;
+	endTime: string | null;
+	filledSKD: boolean;
+	trackingLink: string | null;
+	tempUuid: string | null;
+	visitor: {
+		name: string;
+		phone: string;
+		institution: string | null;
+	};
+	service: {
+		name: string;
+	};
+	admin: {
+		name: string;
+	} | null;
 }
 
 export default function QueueManagementPage() {
-    const { data: session } = useSession();
-    const [queues, setQueues] = useState<Queue[]>([]);
-    const [activeTab, setActiveTab] = useState<QueueStatus>("WAITING");
-    const [loading, setLoading] = useState(true);
-    const [showContinueDialog, setShowContinueDialog] = useState(false);
-    const [nextInQueue, setNextInQueue] = useState<Queue | null>(null);
+	const { data: session } = useSession();
+	const [queues, setQueues] = useState<Queue[]>([]);
+	const [activeTab, setActiveTab] = useState<QueueStatus>("WAITING");
+	const [loading, setLoading] = useState(true);
+	const [showContinueDialog, setShowContinueDialog] = useState(false);
+	const [nextInQueue, setNextInQueue] = useState<Queue | null>(null);
+	const [showRemindSkdDialog, setShowRemindSkdDialog] = useState(false);
+	const [selectedQueue, setSelectedQueue] = useState<Queue | null>(null);
+	const [reminderMessage, setReminderMessage] = useState("");
+	const [isSendingReminder, setIsSendingReminder] = useState(false);
+	const [reminderError, setReminderError] = useState<string | null>(null);
+	const [dataHash, setDataHash] = useState<string>("");
+	const [needsRefresh, setNeedsRefresh] = useState<boolean>(false);
+	const [lastUpdatedPerTab, setLastUpdatedPerTab] = useState<
+		Record<QueueStatus, Date | null>
+	>({
+		WAITING: null,
+		SERVING: null,
+		COMPLETED: null,
+		CANCELED: null,
+	});
 
-    useEffect(() => {
-        fetchQueues(activeTab);
+	// Efficient polling with change detection
+	const pollForChanges = useCallback(async () => {
+		try {
+			const response = await fetch(
+				`/api/queue?status=${activeTab}&hash=${dataHash}`,
+				{
+					credentials: "include",
+				}
+			);
 
-        // Refresh queue list every 30 seconds
-        const interval = setInterval(() => {
-            fetchQueues(activeTab);
-        }, 30000);
+			if (response.ok) {
+				const data = await response.json();
 
-        return () => clearInterval(interval);
-    }, [activeTab]);
+				// Only update the queue data if there are changes
+				if (data.hasChanges) {
+					setQueues(data.queues);
+					setDataHash(data.hash);
+					setLastUpdatedPerTab((prev) => ({
+						...prev,
+						[activeTab]: new Date(),
+					}));
+				}
+			}
+		} catch (error) {
+			console.error("Error polling for changes:", error);
+		}
+	}, [activeTab, dataHash]); // Initial data loading when tab changes
+	const fetchQueues = useCallback(async (status: QueueStatus) => {
+		try {
+			setLoading(true);
+			const response = await fetch(`/api/queue?status=${status}`, {
+				credentials: "include", // Include credentials for authentication
+			});
+			if (response.ok) {
+				const data = await response.json();
+				setQueues(data.queues);
+				setDataHash(data.hash || "");
+				setLastUpdatedPerTab((prev) => ({ ...prev, [status]: new Date() }));
+			} else {
+				toast.error("Gagal memuat daftar antrean");
+			}
+		} catch (error) {
+			console.error("Error fetching queues:", error);
+			toast.error("Terjadi kesalahan saat memuat antrean");
+		} finally {
+			setLoading(false);
+		}
+	}, []); // Removed activeTab from dependencies as it's passed as an argument
 
-    const fetchQueues = async (status: QueueStatus) => {
-        try {
-            setLoading(true);
-            const response = await fetch(`/api/queue?status=${status}`);
-            if (response.ok) {
-                const data = await response.json();
-                setQueues(data.queues);
-            } else {
-                toast.error("Gagal memuat daftar antrean");
-            }
-        } catch (error) {
-            console.error("Error fetching queues:", error);
-            toast.error("Terjadi kesalahan saat memuat antrean");
-        } finally {
-            setLoading(false);
-        }
-    };
+	// Initial data loading when tab changes and polling setup
+	useEffect(() => {
+		fetchQueues(activeTab);
 
-    const handleServeQueue = async (queueId: string) => {
-        try {
-            const response = await fetch(`/api/queue/${queueId}/serve`, {
-                method: "POST",
-            });
+		const interval = setInterval(pollForChanges, 30000);
+		return () => clearInterval(interval);
+	}, [activeTab, fetchQueues, pollForChanges]);
 
-            if (response.ok) {
-                toast.success("Antrean sedang dilayani");
-                fetchQueues(activeTab);
-            } else {
-                const data = await response.json();
-                toast.error(data.error || "Gagal memulai pelayanan antrean");
-            }
-        } catch (error) {
-            console.error("Error serving queue:", error);
-            toast.error("Terjadi kesalahan");
-        }
-    };
+	const handleServeQueue = async (queueId: string) => {
+		try {
+			const response = await fetch(`/api/queue/${queueId}/serve`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Accept: "application/json",
+				},
+				credentials: "include", // Include credentials for authentication
+			});
+			if (response.ok) {
+				toast.success("Antrean sedang dilayani");
+				setNeedsRefresh(true); // Trigger refresh instead of full reload
+			} else {
+				const data = await response.json();
+				console.error("Server error:", data);
 
-    const handleCompleteQueue = async (queueId: string) => {
-        try {
-            const response = await fetch(`/api/queue/${queueId}/complete`, {
-                method: "POST",
-            });
+				// Check if it's a database constraint issue related to admin ID
+				if (
+					data.details &&
+					data.details.includes("Foreign key constraint violated")
+				) {
+					toast.error("Sesi admin tidak valid. Silakan login ulang.");
+					// Force logout if session has invalid admin ID
+					window.location.href = "/"; // Redirect to login page
+				} else {
+					toast.error(data.error || "Gagal memulai pelayanan antrean");
+				}
+			}
+		} catch (error) {
+			console.error("Error serving queue:", error);
+			toast.error("Terjadi kesalahan saat melayani antrean");
+		}
+	};
 
-            if (response.ok) {
-                toast.success("Antrean telah selesai dilayani");
+	const handleCompleteQueue = async (queueId: string) => {
+		try {
+			const response = await fetch(`/api/queue/${queueId}/complete`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				credentials: "include", // Include credentials for authentication
+			});
 
-                // Check if there are waiting customers to offer continuing service
-                const waitingResponse = await fetch(`/api/queue?status=WAITING`);
-                if (waitingResponse.ok) {
-                    const data = await waitingResponse.json();
-                    if (data.queues.length > 0) {
-                        // Get the next customer in queue (first waiting)
-                        const nextCustomer = data.queues[0];
-                        setNextInQueue(nextCustomer);
-                        setShowContinueDialog(true);
-                    }
-                }
+			if (response.ok) {
+				toast.success("Antrean telah selesai dilayani");
 
-                fetchQueues(activeTab);
-            } else {
-                const data = await response.json();
-                toast.error(data.error || "Gagal menyelesaikan antrean");
-            }
-        } catch (error) {
-            console.error("Error completing queue:", error);
-            toast.error("Terjadi kesalahan");
-        }
-    };
+				// Check if there are waiting customers to offer continuing service
+				const waitingResponse = await fetch(`/api/queue?status=WAITING`, {
+					credentials: "include", // Include credentials for authentication
+				});
+				if (waitingResponse.ok) {
+					const data = await waitingResponse.json();
+					if (data.queues.length > 0) {
+						// Get the next customer in queue (first waiting)
+						const nextCustomer = data.queues[0];
+						setNextInQueue(nextCustomer);
+						setShowContinueDialog(true);
+					}
+				}
 
-    const handleCancelQueue = async (queueId: string) => {
-        try {
-            const response = await fetch(`/api/queue/${queueId}/cancel`, {
-                method: "POST",
-            });
+				// Trigger refresh to show updated data
+				setNeedsRefresh(true);
+			} else {
+				const data = await response.json();
+				toast.error(data.error || "Gagal menyelesaikan antrean");
+			}
+		} catch (error) {
+			console.error("Error completing queue:", error);
+			toast.error("Terjadi kesalahan");
+		}
+	};
 
-            if (response.ok) {
-                toast.success("Antrean telah dibatalkan");
-                fetchQueues(activeTab);
-            } else {
-                const data = await response.json();
-                toast.error(data.error || "Gagal membatalkan antrean");
-            }
-        } catch (error) {
-            console.error("Error canceling queue:", error);
-            toast.error("Terjadi kesalahan");
-        }
-    };
+	const handleCancelQueue = async (queueId: string) => {
+		try {
+			const response = await fetch(`/api/queue/${queueId}/cancel`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				credentials: "include", // Include credentials for authentication
+			});
+			if (response.ok) {
+				toast.success("Antrean telah dibatalkan");
+				// Trigger refresh to show updated data
+				setNeedsRefresh(true);
+			} else {
+				const data = await response.json();
+				toast.error(data.error || "Gagal membatalkan antrean");
+			}
+		} catch (error) {
+			console.error("Error canceling queue:", error);
+			toast.error("Terjadi kesalahan");
+		}
+	};
 
-    const getWaitingTime = (createdAt: string) => {
-        try {
-            return formatDistance(new Date(createdAt), new Date(), {
-                addSuffix: false,
-                locale: id,
-            });
-        } catch (error) {
-            console.log("Error formatting date:", error);
+	const getWaitingTime = (createdAt: string) => {
+		try {
+			return formatDistance(new Date(createdAt), new Date(), {
+				addSuffix: false,
+				locale: id,
+			});
+		} catch (error) {
+			console.log("Error formatting date:", error);
 
-            return "-";
-        }
-    };
+			return "-";
+		}
+	};
 
-    const getActionButtons = (queue: Queue) => {
-        const isSuperAdmin = session?.user?.role === Role.SUPERADMIN;
+	// Function to handle opening the SKD reminder dialog
+	const handleRemindSKD = (queue: Queue) => {
+		setSelectedQueue(queue);
+		setReminderMessage(
+			`Halo ${queue.visitor.name}, mohon kesediaannya untuk mengisi survei kepuasan pelanggan (SKD2025) BPS Buton Selatan melalui link berikut: ${window.location.origin}/visitor-form/${queue.tempUuid}`
+		);
+		setShowRemindSkdDialog(true);
+	}; // Function to prepare WhatsApp message
+	const prepareWhatsAppReminder = async () => {
+		if (!selectedQueue) return;
 
-        switch (queue.status) {
-            case "WAITING":
-                return (
-                    <div className="flex space-x-2">
-                        <Button
-                            size="sm"
-                            onClick={() => handleServeQueue(queue.id)}
-                        >
-                            Layani
-                        </Button>
-                        <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleCancelQueue(queue.id)}
-                        >
-                            Batalkan
-                        </Button>
-                    </div>
-                );
-            case "SERVING":
-                // Only show complete button if the current admin is serving this queue or is superadmin
-                if (
-                    isSuperAdmin ||
-                    (queue.admin && queue.admin.name === session?.user?.name)
-                ) {
-                    return (
-                        <Button
-                            size="sm"
-                            onClick={() => handleCompleteQueue(queue.id)}
-                        >
-                            Selesai
-                        </Button>
-                    );
-                }
-                return <span>Sedang dilayani oleh {queue.admin?.name}</span>;
-            default:
-                return null;
-        }
-    };
+		try {
+			setIsSendingReminder(true);
+			setReminderError(null);
 
-    // const handleContinue = (queue: Queue) => {
-    //     setNextInQueue(queue);
-    //     setShowContinueDialog(true);
-    // };
+			// Use the direct WhatsApp service instead of the API
+			const result = await sendWhatsAppDirectReminder(
+				selectedQueue.visitor.phone,
+				reminderMessage
+			);
 
-    const handleDialogClose = () => {
-        setShowContinueDialog(false);
-        setNextInQueue(null);
-    };
+			if (result.success) {
+				const data = result.data as { whatsappUrl: string };
+				window.open(data.whatsappUrl, "_blank");
+				toast.success("Link WhatsApp berhasil dibuka");
+				setShowRemindSkdDialog(false);
+				setNeedsRefresh(true);
+			} else {
+				setReminderError(result.message);
+				toast.error(result.message);
+			}
+		} catch (error) {
+			console.error("Error preparing WhatsApp reminder:", error);
+			setReminderError("Terjadi kesalahan saat menyiapkan pengingat WhatsApp");
+			toast.error("Terjadi kesalahan saat menyiapkan pengingat WhatsApp");
+		} finally {
+			setIsSendingReminder(false);
+		}
+	};
 
-    const handleNextCustomer = async () => {
-        if (!nextInQueue) return;
+	// Function to send reminder via WhatsApp Bot
+	const sendWhatsAppBotReminderHandler = async () => {
+		if (!selectedQueue) return;
 
-        try {
-            const response = await fetch(`/api/queue/${nextInQueue.id}/serve`, {
-                method: "POST",
-            });
+		try {
+			setIsSendingReminder(true);
+			setReminderError(null);
 
-            if (response.ok) {
-                toast.success("Antrean sedang dilayani");
-                fetchQueues(activeTab);
-            } else {
-                const data = await response.json();
-                toast.error(data.error || "Gagal memulai pelayanan antrean");
-            }
-        } catch (error) {
-            console.error("Error serving queue:", error);
-            toast.error("Terjadi kesalahan");
-        } finally {
-            handleDialogClose();
-        }
-    };
+			const result = await sendWhatsAppBotReminder(
+				selectedQueue.visitor.phone,
+				reminderMessage
+			);
 
-    return (
-        <div className="space-y-4">
-            <div>
-                <h1 className="font-bold text-2xl">Manajemen Antrean</h1>
-                <p className="text-muted-foreground">
-                    Kelola antrean pengunjung PST
-                </p>
-            </div>
+			if (result.success) {
+				toast.success("Pengingat berhasil dikirim via WhatsApp Bot");
+				setShowRemindSkdDialog(false);
+				setNeedsRefresh(true);
+			} else {
+				setReminderError(result.message);
+				toast.error(result.message);
+			}
+		} catch (error) {
+			console.error("Error sending WhatsApp Bot reminder:", error);
+			setReminderError(
+				"Terjadi kesalahan saat mengirim pengingat via WhatsApp Bot"
+			);
+			toast.error("Terjadi kesalahan saat mengirim pengingat via WhatsApp Bot");
+		} finally {
+			setIsSendingReminder(false);
+		}
+	};
 
-            <Tabs defaultValue="WAITING" onValueChange={(value) => setActiveTab(value as QueueStatus)}>
-                <TabsList className="grid grid-cols-3 w-full">
-                    <TabsTrigger value="WAITING">Menunggu</TabsTrigger>
-                    <TabsTrigger value="SERVING">Sedang Dilayani</TabsTrigger>
-                    <TabsTrigger value="COMPLETED">Selesai</TabsTrigger>
-                </TabsList>
+	// Function to handle SKD check
+	const handleMarkSkdFilled = async (queue: Queue, filled: boolean) => {
+		try {
+			if (!queue.tempUuid) return;
 
-                {["WAITING", "SERVING", "COMPLETED"].map((status) => (
-                    <TabsContent key={status} value={status}>
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>
-                                    {status === "WAITING" && "Antrean Menunggu"}
-                                    {status === "SERVING" && "Antrean Sedang Dilayani"}
-                                    {status === "COMPLETED" && "Antrean Selesai"}
-                                </CardTitle>
-                                <CardDescription>
-                                    {status === "WAITING" && "Daftar pengunjung yang sedang menunggu untuk dilayani"}
-                                    {status === "SERVING" && "Daftar pengunjung yang sedang dalam proses pelayanan"}
-                                    {status === "COMPLETED" && "Daftar pengunjung yang telah selesai dilayani"}
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                {loading ? (
-                                    <div className="py-4 text-center">Memuat data antrean...</div>
-                                ) : queues.length === 0 ? (
-                                    <div className="py-4 text-center">Tidak ada antrean saat ini</div>
-                                ) : (
-                                    <div className="overflow-x-auto">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>No.</TableHead>
-                                                    <TableHead>Nama</TableHead>
-                                                    <TableHead>Layanan</TableHead>
-                                                    <TableHead>
-                                                        {status === "WAITING" && "Waktu Menunggu"}
-                                                        {status === "SERVING" && "Petugas"}
-                                                        {status === "COMPLETED" && "Waktu Selesai"}
-                                                    </TableHead>
-                                                    <TableHead>Aksi</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {queues.map((queue) => (
-                                                    <TableRow key={queue.id}>
-                                                        <TableCell className="font-medium">
-                                                            {queue.queueNumber}
-                                                        </TableCell>
-                                                        <TableCell>{queue.visitor.name}</TableCell>
-                                                        <TableCell>{queue.service.name}</TableCell>
-                                                        <TableCell>
-                                                            {status === "WAITING" && getWaitingTime(queue.createdAt)}
-                                                            {status === "SERVING" && queue.admin?.name}
-                                                            {status === "COMPLETED" && new Date(queue.endTime!).toLocaleTimeString("id-ID")}
-                                                        </TableCell>
-                                                        <TableCell>{getActionButtons(queue)}</TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                ))}
-            </Tabs>
+			const response = await fetch(`/api/visitor-form/skd`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					tempUuid: queue.tempUuid,
+					filled: filled,
+				}),
+				credentials: "include", // Include credentials for authentication
+			});
 
-            {/* Dialog for continue serving next customer */}
-            {nextInQueue && (
-                <Dialog open={showContinueDialog} onOpenChange={handleDialogClose}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Layani Pelanggan Berikutnya</DialogTitle>
-                        </DialogHeader>
-                        <DialogDescription>
-                            Apakah Anda yakin ingin melanjutkan dan melayani pelanggan berikutnya
-                            <br />
-                            <strong>{nextInQueue.visitor.name}</strong>?
-                        </DialogDescription>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={handleDialogClose}>
-                                Tidak
-                            </Button>
-                            <Button onClick={handleNextCustomer}>
-                                Ya, Layani
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            )}
-        </div>
-    );
+			if (response.ok) {
+				toast.success(
+					filled ? "SKD ditandai telah diisi" : "SKD ditandai belum diisi"
+				);
+				setNeedsRefresh(true);
+			} else {
+				const errorData = await response.json();
+				toast.error(errorData.error || "Gagal mengubah status SKD");
+			}
+		} catch (error) {
+			console.error("Error updating SKD status:", error);
+			toast.error("Terjadi kesalahan saat mengubah status SKD");
+		}
+	};
+
+	const getActionButtons = (queue: Queue) => {
+		const isSuperAdmin = session?.user?.role === Role.SUPERADMIN;
+		const actions = [];
+
+		// Add "Remind SKD" button for queues that haven't filled SKD
+		if (!queue.filledSKD && queue.tempUuid) {
+			actions.push(
+				<Button
+					key="remind-skd"
+					size="sm"
+					variant="outline"
+					className="flex items-center gap-1"
+					onClick={() => handleRemindSKD(queue)}
+				>
+					<Smartphone className="w-3 h-3" />
+					<span>Kirim Pengingat</span>
+				</Button>
+			);
+		}
+
+		// Add standard action buttons based on queue status
+		switch (queue.status) {
+			case "WAITING":
+				actions.push(
+					<Button
+						key="serve"
+						size="sm"
+						onClick={() => handleServeQueue(queue.id)}
+					>
+						Layani
+					</Button>,
+					<Button
+						key="cancel"
+						size="sm"
+						variant="destructive"
+						onClick={() => handleCancelQueue(queue.id)}
+					>
+						Batalkan
+					</Button>
+				);
+				break;
+			case "SERVING":
+				// Only show complete button if the current admin is serving this queue or is superadmin
+				if (
+					isSuperAdmin ||
+					(queue.admin && queue.admin.name === session?.user?.name)
+				) {
+					actions.push(
+						<Button
+							key="complete"
+							size="sm"
+							onClick={() => handleCompleteQueue(queue.id)}
+						>
+							Selesai
+						</Button>
+					);
+				} else {
+					actions.push(
+						<span key="serving-info">
+							Sedang dilayani oleh {queue.admin?.name}
+						</span>
+					);
+				}
+				break;
+			default:
+				break;
+		}
+
+		return <div className="flex flex-wrap justify-end gap-2">{actions}</div>;
+	};
+
+	const getTableColumns = () => (
+		<>
+			<TableHead className="w-16">No</TableHead>
+			<TableHead>Nama</TableHead>
+			<TableHead>Layanan</TableHead>
+			<TableHead>Waktu</TableHead>
+			<TableHead>Status SKD</TableHead>
+			<TableHead>Link Tracking</TableHead>
+			<TableHead className="text-right">Aksi</TableHead>
+		</>
+	);
+
+	// Function to render queue rows
+	const renderQueueRow = (queue: Queue) => (
+		<TableRow key={queue.id}>
+			<TableCell className="font-medium">{queue.queueNumber}</TableCell>
+			<TableCell>
+				<div>
+					<p>{queue.visitor.name}</p>
+					<p className="text-muted-foreground text-xs">
+						{queue.visitor.institution || "-"}
+					</p>
+					<p className="text-muted-foreground text-xs">{queue.visitor.phone}</p>
+				</div>
+			</TableCell>
+			<TableCell>{queue.service.name}</TableCell>
+			<TableCell>
+				<div>
+					<p className="text-muted-foreground text-xs">
+						{getWaitingTime(queue.createdAt)}
+					</p>
+				</div>
+			</TableCell>
+			<TableCell>
+				{queue.filledSKD ? (
+					<div className="flex items-center space-x-2">
+						<span className="inline-flex items-center bg-green-50 px-2 py-1 rounded-full ring-1 ring-green-600/20 ring-inset font-medium text-green-700 text-xs">
+							Sudah Diisi
+						</span>
+						<Button
+							variant="ghost"
+							size="sm"
+							className="h-6 text-xs"
+							onClick={() => handleMarkSkdFilled(queue, false)}
+						>
+							Tandai Belum
+						</Button>
+					</div>
+				) : (
+					<div className="flex items-center space-x-2">
+						<span className="inline-flex items-center bg-red-50 px-2 py-1 rounded-full ring-1 ring-red-600/20 ring-inset font-medium text-red-700 text-xs">
+							Belum Diisi
+						</span>
+						<Button
+							variant="ghost"
+							size="sm"
+							className="h-6 text-xs"
+							onClick={() => handleMarkSkdFilled(queue, true)}
+						>
+							Tandai Sudah
+						</Button>
+					</div>
+				)}
+			</TableCell>
+			<TableCell>
+				{queue.trackingLink ? (
+					<Button
+						variant="outline"
+						size="sm"
+						className="h-8 text-xs"
+						onClick={() => {
+							// Copy to clipboard
+							navigator.clipboard.writeText(
+								`${window.location.origin}/visitor-form/${queue.tempUuid}`
+							);
+							toast.success("Link tracking disalin ke clipboard");
+						}}
+					>
+						Salin Link
+					</Button>
+				) : (
+					<span className="text-muted-foreground text-xs">-</span>
+				)}
+			</TableCell>
+			<TableCell className="text-right">{getActionButtons(queue)}</TableCell>
+		</TableRow>
+	);
+
+	// Additional effect for manual refresh when needed (triggered by actions like serve, complete, cancel)
+	useEffect(() => {
+		if (needsRefresh) {
+			fetchQueues(activeTab);
+			setNeedsRefresh(false);
+		}
+	}, [needsRefresh, activeTab, fetchQueues]);
+
+	const handleManualRefresh = () => {
+		if (loading) return; // Prevent multiple refreshes if already loading
+		const tabName = activeTab
+			.charAt(0)
+			.toUpperCase()
+			+ activeTab.slice(1).toLowerCase().replace("_", " ");
+		toast.info(`Memperbarui data untuk tab "${tabName}"...`);
+		fetchQueues(activeTab); // This function already handles setLoading
+	};
+
+	return (
+		<div className="space-y-4 p-4">
+			<div className="flex justify-between items-center">
+				<div>
+					<h1 className="font-bold text-2xl">Manajemen Antrean</h1>
+					<p className="text-muted-foreground">
+						Kelola antrean pengunjung PST secara langsung
+					</p>
+				</div>
+				<Button variant="outline" size="sm" onClick={handleManualRefresh} disabled={loading}>
+					{loading ? (
+						<>
+							<RefreshCw className="mr-2 w-4 h-4 animate-spin" />
+							Memperbarui...
+						</>
+					) : (
+						<>
+							<RefreshCw className="mr-2 w-4 h-4" />
+							Perbarui Data
+						</>
+					)}
+				</Button>
+			</div>
+			<Tabs
+				defaultValue="WAITING"
+				value={activeTab}
+				onValueChange={(value) => setActiveTab(value as QueueStatus)}
+			>
+				<TabsList className="grid grid-cols-2 md:grid-cols-4 w-full">
+					<TabsTrigger value="WAITING">Menunggu</TabsTrigger>
+					<TabsTrigger value="SERVING">Sedang Dilayani</TabsTrigger>
+					<TabsTrigger value="COMPLETED">Selesai</TabsTrigger>
+					<TabsTrigger value="CANCELED">Dibatalkan</TabsTrigger>
+				</TabsList>
+
+				{/* WAITING Tab */}
+				<TabsContent value="WAITING">
+					{lastUpdatedPerTab.WAITING && (
+						<div className="mb-2 text-muted-foreground text-xs">
+							Terakhir diperbarui:{" "}
+							{lastUpdatedPerTab.WAITING.toLocaleTimeString("id-ID", {
+								hour: "2-digit",
+								minute: "2-digit",
+								second: "2-digit",
+							})}
+						</div>
+					)}
+					<Card>
+						<CardHeader>
+							<CardTitle>Antrean Menunggu</CardTitle>
+							<CardDescription>
+								Daftar pengunjung yang sedang menunggu untuk dilayani.
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							{loading && activeTab === "WAITING" ? (
+								<TableSkeleton columns={7} rows={5} />
+							) : queues.length > 0 ? (
+								<Table>
+									<TableHeader>
+										<TableRow>{getTableColumns()}</TableRow>
+									</TableHeader>
+									<TableBody>
+										{queues.map((queue) => renderQueueRow(queue))}
+									</TableBody>
+								</Table>
+							) : (
+								<p>Tidak ada antrean menunggu.</p>
+							)}
+						</CardContent>
+					</Card>
+				</TabsContent>
+
+				{/* SERVING Tab */}
+				<TabsContent value="SERVING">
+					{lastUpdatedPerTab.SERVING && (
+						<div className="mb-2 text-muted-foreground text-xs">
+							Terakhir diperbarui:{" "}
+							{lastUpdatedPerTab.SERVING.toLocaleTimeString("id-ID", {
+								hour: "2-digit",
+								minute: "2-digit",
+								second: "2-digit",
+							})}
+						</div>
+					)}
+					<Card>
+						<CardHeader>
+							<CardTitle>Antrean Sedang Dilayani</CardTitle>
+							<CardDescription>
+								Daftar pengunjung yang sedang dalam proses pelayanan.
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							{loading && activeTab === "SERVING" ? (
+								<TableSkeleton columns={7} rows={5} />
+							) : queues.length > 0 ? (
+								<Table>
+									<TableHeader>
+										<TableRow>{getTableColumns()}</TableRow>
+									</TableHeader>
+									<TableBody>
+										{queues.map((queue) => renderQueueRow(queue))}
+									</TableBody>
+								</Table>
+							) : (
+								<p>Tidak ada antrean yang sedang dilayani.</p>
+							)}
+						</CardContent>
+					</Card>
+				</TabsContent>
+
+				{/* COMPLETED Tab */}
+				<TabsContent value="COMPLETED">
+					{lastUpdatedPerTab.COMPLETED && (
+						<div className="mb-2 text-muted-foreground text-xs">
+							Terakhir diperbarui:{" "}
+							{lastUpdatedPerTab.COMPLETED.toLocaleTimeString("id-ID", {
+								hour: "2-digit",
+								minute: "2-digit",
+								second: "2-digit",
+							})}
+						</div>
+					)}
+					<Card>
+						<CardHeader>
+							<CardTitle>Antrean Selesai</CardTitle>
+							<CardDescription>
+								Daftar pengunjung yang telah selesai dilayani.
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							{loading && activeTab === "COMPLETED" ? (
+								<TableSkeleton columns={7} rows={5} />
+							) : queues.length > 0 ? (
+								<Table>
+									<TableHeader>
+										<TableRow>{getTableColumns()}</TableRow>
+									</TableHeader>
+									<TableBody>
+										{queues.map((queue) => renderQueueRow(queue))}
+									</TableBody>
+								</Table>
+							) : (
+								<p>Tidak ada antrean yang telah selesai.</p>
+							)}
+						</CardContent>
+					</Card>
+				</TabsContent>
+
+				{/* CANCELED Tab */}
+				<TabsContent value="CANCELED">
+					{lastUpdatedPerTab.CANCELED && (
+						<div className="mb-2 text-muted-foreground text-xs">
+							Terakhir diperbarui:{" "}
+							{lastUpdatedPerTab.CANCELED.toLocaleTimeString("id-ID", {
+								hour: "2-digit",
+								minute: "2-digit",
+								second: "2-digit",
+							})}
+						</div>
+					)}
+					<Card>
+						<CardHeader>
+							<CardTitle>Antrean Dibatalkan</CardTitle>
+							<CardDescription>
+								Daftar pengunjung yang antreannya dibatalkan.
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							{loading && activeTab === "CANCELED" ? (
+								<TableSkeleton columns={7} rows={5} />
+							) : queues.length > 0 ? (
+								<Table>
+									<TableHeader>
+										<TableRow>{getTableColumns()}</TableRow>
+									</TableHeader>
+									<TableBody>
+										{queues.map((queue) => renderQueueRow(queue))}
+									</TableBody>
+								</Table>
+							) : (
+								<p>Tidak ada antrean yang dibatalkan.</p>
+							)}
+						</CardContent>
+					</Card>
+				</TabsContent>
+			</Tabs>
+			<Dialog open={showContinueDialog} onOpenChange={setShowContinueDialog}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Lanjut ke Pengunjung Berikutnya?</DialogTitle>
+					</DialogHeader>
+					<div className="py-4">
+						{nextInQueue && (
+							<div className="space-y-2">
+								<p>
+									Pengunjung berikutnya:{" "}
+									<strong>{nextInQueue.visitor.name}</strong>
+								</p>
+								<p>
+									Nomor Antrean: <strong>{nextInQueue.queueNumber}</strong>
+								</p>
+								<p>
+									Layanan: <strong>{nextInQueue.service.name}</strong>
+								</p>
+							</div>
+						)}
+					</div>
+					<DialogFooter className="flex justify-end space-x-2">
+						<Button
+							variant="outline"
+							onClick={() => setShowContinueDialog(false)}
+						>
+							Nanti Saja
+						</Button>
+						<Button
+							onClick={() => {
+								if (nextInQueue) {
+									handleServeQueue(nextInQueue.id);
+									setShowContinueDialog(false);
+								}
+							}}
+						>
+							Ya, Layani Sekarang
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>{" "}
+			{/* Add SKD Reminder Dialog */}
+			<Dialog open={showRemindSkdDialog} onOpenChange={setShowRemindSkdDialog}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Kirim Pengingat SKD</DialogTitle>
+					</DialogHeader>
+					<div className="space-y-4 py-4">
+						{selectedQueue && (
+							<>
+								<div className="space-y-2">
+									<p>
+										Pengunjung: <strong>{selectedQueue.visitor.name}</strong>
+									</p>
+									<p>
+										No. HP: <strong>{selectedQueue.visitor.phone}</strong>
+									</p>
+								</div>
+
+								<div className="space-y-2">
+									<Label htmlFor="reminder-message">Pesan Pengingat:</Label>
+									<Textarea
+										id="reminder-message"
+										value={reminderMessage}
+										onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+											setReminderMessage(e.target.value)
+										}
+										rows={4}
+										className="resize-none"
+										placeholder="Ketik pesan di sini..."
+									/>
+								</div>
+
+								{reminderError && (
+									<div className="flex items-start gap-2 bg-destructive/15 p-3 rounded-md text-destructive text-sm">
+										<AlertCircle className="flex-shrink-0 mt-0.5 w-4 h-4" />
+										<div>{reminderError}</div>
+									</div>
+								)}
+							</>
+						)}
+					</div>
+					<DialogFooter className="sm:flex-row flex-col gap-2">
+						<Button
+							variant="outline"
+							onClick={() => setShowRemindSkdDialog(false)}
+						>
+							Batal
+						</Button>
+						<div className="flex flex-1 justify-end gap-2">
+							<Button
+								onClick={prepareWhatsAppReminder}
+								disabled={isSendingReminder}
+								className="gap-2"
+								variant="default"
+							>
+								<MessageSquareText className="w-4 h-4" />
+								Kirim via WA Direct
+							</Button>
+							<Button
+								onClick={sendWhatsAppBotReminderHandler}
+								disabled={isSendingReminder}
+								className="gap-2"
+								variant="secondary"
+							>
+								<Smartphone className="w-4 h-4" />
+								Kirim via WA Bot
+							</Button>
+						</div>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+		</div>
+	);
 }
