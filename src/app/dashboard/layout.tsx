@@ -12,6 +12,7 @@ import {
     BarChart4,
     Menu,
     X,
+    QrCode, // Import QrCode icon
 } from "lucide-react";
 import { useEffect, useState } from "react"; // Added useEffect
 import Image from "next/image";
@@ -71,6 +72,12 @@ export default function DashboardLayout({
             href: "/dashboard/services",
             icon: <Settings size={20} />,
             allowedRoles: [Role.SUPERADMIN],
+        },
+        {
+            title: "QR Code",
+            href: "/dashboard/qrcode",
+            icon: <QrCode size={20} />,
+            allowedRoles: [Role.ADMIN, Role.SUPERADMIN],
         },
     ];
 

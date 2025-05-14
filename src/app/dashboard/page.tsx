@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Role } from "@/generated/prisma";
 import Link from "next/link";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Hourglass, Users, CheckCircle, XCircle, Settings, RefreshCcw } from "lucide-react";
+import { Hourglass, Users, CheckCircle, XCircle, RefreshCcw, Settings } from "lucide-react";
 
 interface DashboardStats {
     counts: {
@@ -179,7 +179,7 @@ export default function DashboardPage() {
                 <>
                     {/* Metric Cards */}
                     <div className="gap-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                        <Card className="bg-surface shadow-md hover:shadow-lg border-custom overflow-hidden transition-all duration-200">
+                        <Card className="bg-surface shadow-md hover:shadow-lg border-custom h-full overflow-hidden transition-all duration-200">
                             <CardHeader className="flex flex-row justify-between items-center space-y-0 pb-2">
                                 <CardTitle className="font-semibold text-primary-color text-base">Antrean Menunggu</CardTitle>
                                 <Hourglass className="w-5 h-5 text-accent" />
@@ -190,13 +190,13 @@ export default function DashboardPage() {
                                     Pengunjung yang sedang menunggu layanan
                                 </p>
                             </CardContent>
-                            <CardFooter>
+                            <CardFooter className="mt-auto pt-2">
                                 <Link href="/dashboard/queue" className="w-full">
-                                    <Button variant="ghost" className="justify-start p-2 w-full text-accent hover:text-accent/90 text-xs">Lihat Detail</Button>
+                                    <Button variant="ghost" className="justify-start p-2 w-full text-accent hover:text-muted text-xs">Lihat Detail</Button>
                                 </Link>
                             </CardFooter>
                         </Card>
-                        <Card className="bg-surface shadow-md hover:shadow-lg border-custom overflow-hidden transition-all duration-200">
+                        <Card className="bg-surface shadow-md hover:shadow-lg border-custom h-full overflow-hidden transition-all duration-200">
                             <CardHeader className="flex flex-row justify-between items-center space-y-0 pb-2">
                                 <CardTitle className="font-semibold text-primary-color text-base">Sedang Dilayani</CardTitle>
                                 <Users className="w-5 h-5 text-primary" />
@@ -207,13 +207,13 @@ export default function DashboardPage() {
                                     Pengunjung yang sedang dalam proses layanan
                                 </p>
                             </CardContent>
-                            <CardFooter>
+                            <CardFooter className="mt-auto pt-2">
                                 <Link href="/dashboard/queue#serving" className="w-full">
-                                    <Button variant="ghost" className="justify-start p-2 w-full text-primary hover:text-primary/90 text-xs">Lihat Detail</Button>
+                                    <Button variant="ghost" className="justify-start p-2 w-full text-primary hover:text-muted text-xs">Lihat Detail</Button>
                                 </Link>
                             </CardFooter>
                         </Card>
-                        <Card className="bg-surface shadow-md hover:shadow-lg border-custom overflow-hidden transition-all duration-200">
+                        <Card className="bg-surface shadow-md hover:shadow-lg border-custom h-full overflow-hidden transition-all duration-200">
                             <CardHeader className="flex flex-row justify-between items-center space-y-0 pb-2">
                                 <CardTitle className="font-semibold text-primary-color text-base">Selesai Dilayani</CardTitle>
                                 <CheckCircle className="w-5 h-5 text-green-500" />
@@ -224,13 +224,13 @@ export default function DashboardPage() {
                                     Layanan yang telah selesai hari ini
                                 </p>
                             </CardContent>
-                            <CardFooter>
+                            <CardFooter className="mt-auto pt-2">
                                 <Link href="/dashboard/all-queues?status=COMPLETED" className="w-full">
-                                    <Button variant="ghost" className="justify-start p-2 w-full text-green-500 hover:text-green-500/90 text-xs">Lihat Detail</Button>
+                                    <Button variant="ghost" className="justify-start p-2 w-full text-green-500 hover:text-muted text-xs">Lihat Detail</Button>
                                 </Link>
                             </CardFooter>
                         </Card>
-                        <Card className="bg-surface shadow-md hover:shadow-lg border-custom overflow-hidden transition-all duration-200">
+                        <Card className="bg-surface shadow-md hover:shadow-lg border-custom h-full overflow-hidden transition-all duration-200">
                             <CardHeader className="flex flex-row justify-between items-center space-y-0 pb-2">
                                 <CardTitle className="font-semibold text-primary-color text-base">Dibatalkan</CardTitle>
                                 <XCircle className="w-5 h-5 text-destructive" />
@@ -238,51 +238,126 @@ export default function DashboardPage() {
                             <CardContent>
                                 <div className="font-bold text-primary-color text-2xl md:text-3xl">{stats.counts.canceled}</div>
                                 <p className="mt-1 text-secondary-color text-xs">
-                                    Layanan yang dibatalkan hari ini
+                                    Antrean yang dibatalkan hari ini
                                 </p>
                             </CardContent>
-                            <CardFooter>
+                            <CardFooter className="mt-auto pt-2">
                                 <Link href="/dashboard/all-queues?status=CANCELED" className="w-full">
-                                    <Button variant="ghost" className="justify-start p-2 w-full text-destructive hover:text-destructive/90 text-xs">Lihat Detail</Button>
+                                    <Button variant="ghost" className="justify-start p-2 w-full text-destructive hover:text-muted text-xs">Lihat Detail</Button>
                                 </Link>
                             </CardFooter>
                         </Card>
                     </div>
 
-                    {/* Detailed Stat Cards */}
-                    <div className="gap-6 grid md:grid-cols-2 mt-8">
-                        <Card className="bg-surface shadow-lg p-6 border border-custom rounded-xl">
-                            <h3 className="mb-3 font-semibold text-text-primary text-lg">Rata-rata Waktu Tunggu</h3>
-                            <p className="font-bold text-accent text-3xl">{stats.averages.waitTimeMinutes} <span className="font-normal text-text-secondary text-sm">menit</span></p>
+                    {/* Detailed Stat Cards */}                    <div className="gap-6 grid md:grid-cols-2 mt-8">
+                        <Card className="bg-surface shadow-md hover:shadow-lg border-custom overflow-hidden transition-all duration-200">
+                            <CardHeader className="flex flex-row justify-between items-center space-y-0 pb-2">
+                                <CardTitle className="font-semibold text-primary-color text-base">Rata-rata Waktu Tunggu</CardTitle>
+                                <RefreshCcw className="w-5 h-5 text-accent" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="font-bold text-accent text-2xl md:text-3xl">
+                                    {stats.averages.waitTimeMinutes} <span className="font-normal text-secondary-color text-sm">menit</span>
+                                </div>
+                                <p className="mt-1 text-secondary-color text-xs">
+                                    Waktu rata-rata pengunjung menunggu sebelum dilayani
+                                </p>
+                            </CardContent>
                         </Card>
-                        <Card className="bg-surface shadow-lg p-6 border border-custom rounded-xl">
-                            <h3 className="mb-3 font-semibold text-text-primary text-lg">Rata-rata Waktu Layanan</h3>
-                            <p className="font-bold text-accent text-3xl">{stats.averages.serviceTimeMinutes} <span className="font-normal text-text-secondary text-sm">menit</span></p>
+                        <Card className="bg-surface shadow-md hover:shadow-lg border-custom overflow-hidden transition-all duration-200">
+                            <CardHeader className="flex flex-row justify-between items-center space-y-0 pb-2">
+                                <CardTitle className="font-semibold text-primary-color text-base">Rata-rata Waktu Layanan</CardTitle>
+                                <RefreshCcw className="w-5 h-5 text-primary" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="font-bold text-primary text-2xl md:text-3xl">
+                                    {stats.averages.serviceTimeMinutes} <span className="font-normal text-secondary-color text-sm">menit</span>
+                                </div>
+                                <p className="mt-1 text-secondary-color text-xs">
+                                    Durasi rata-rata layanan per pengunjung
+                                </p>
+                            </CardContent>
                         </Card>
-                    </div>
-
-                    {/* Admin section */}
+                    </div>                    {/* Admin section */}
                     {session.user.role === Role.SUPERADMIN && (
                         <div className="gap-6 grid md:grid-cols-2 mt-8">
-                            <Card className="bg-surface shadow-lg p-6 border border-custom rounded-xl">
-                                <h3 className="mb-3 font-semibold text-text-primary text-lg">Total Pengunjung Hari Ini</h3>
-                                <p className="font-bold text-info text-3xl">{stats.counts.total} <span className="font-normal text-text-secondary text-sm">pengunjung</span></p>
-                            </Card>
-                            <Card className="bg-surface shadow-lg p-6 border border-custom rounded-xl">
-                                <CardHeader className="mb-3 p-0">
-                                    <CardTitle className="flex items-center font-semibold text-text-primary text-lg">
-                                        <Settings className="mr-2 w-5 h-5 text-info" /> Pengaturan Sistem
-                                    </CardTitle>
+                            <Card className="bg-surface shadow-md hover:shadow-lg border-custom overflow-hidden transition-all duration-200">
+                                <CardHeader className="flex flex-row justify-between items-center space-y-0 pb-2">
+                                    <CardTitle className="font-semibold text-primary-color text-base">Total Pengunjung Hari Ini</CardTitle>
+                                    <Users className="w-5 h-5 text-info" />
                                 </CardHeader>
-                                <CardContent className="p-0">
-                                    <p className="mb-3 text-text-secondary text-sm">Akses cepat ke halaman konfigurasi sistem.</p>
-                                    <Link href="/dashboard/services">
-                                        <Button variant="outline" className="w-full sm:w-auto">Kelola Layanan</Button>
-                                    </Link>
+                                <CardContent>
+                                    <div className="font-bold text-info text-2xl md:text-3xl">
+                                        {stats.counts.total} <span className="font-normal text-secondary-color text-sm">pengunjung</span>
+                                    </div>
+                                    <p className="mt-1 text-secondary-color text-xs">
+                                        Jumlah total pengunjung yang terdaftar hari ini
+                                    </p>
+                                </CardContent>
+                            </Card>
+                            <Card className="bg-surface shadow-md hover:shadow-lg border-custom overflow-hidden transition-all duration-200">
+                                <CardHeader className="flex flex-row justify-between items-center space-y-0 pb-2">
+                                    <CardTitle className="font-semibold text-primary-color text-base">Pengaturan Sistem</CardTitle>
+                                    <Settings className="w-5 h-5 text-info" />
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="mb-3 text-secondary-color text-xs">
+                                        Akses cepat ke halaman konfigurasi sistem
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        <Link href="/dashboard/services">
+                                            <Button variant="outline" size="sm" className="text-xs">Kelola Layanan</Button>
+                                        </Link>
+                                        <Link href="/dashboard/users">
+                                            <Button variant="outline" size="sm" className="text-xs">Kelola Pengguna</Button>
+                                        </Link>
+                                        <Link href="/dashboard/qrcode">
+                                            <Button variant="outline" size="sm" className="text-xs">QR Code</Button>
+                                        </Link>
+                                        <Link href="/dashboard/analytics">
+                                            <Button variant="outline" size="sm" className="text-xs">Analisis</Button>
+                                        </Link>
+                                    </div>
                                 </CardContent>
                             </Card>
                         </div>
-                    )}
+                    )}{/* User Manual Card */}
+                    <div className="mt-8">
+                        <Card className="bg-surface shadow-md hover:shadow-lg border-custom overflow-hidden transition-all duration-200">
+                            <CardHeader className="flex flex-row justify-between items-center space-y-0 pb-2">
+                                <CardTitle className="font-semibold text-primary-color text-base">Panduan Pengguna</CardTitle>
+                                <Users className="w-5 h-5 text-info" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="gap-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                                    <div className="hover:shadow-sm p-3 border border-border rounded-lg transition-all duration-200">
+                                        <h4 className="mb-2 font-medium text-primary-color text-sm">Cara Melihat Antrean</h4>
+                                        <p className="text-secondary-color text-xs">Klik tombol &ldquo;Lihat Detail&rdquo; pada kartu Antrean Menunggu untuk melihat daftar antrean saat ini.</p>
+                                    </div>
+                                    <div className="hover:shadow-sm p-3 border border-border rounded-lg transition-all duration-200">
+                                        <h4 className="mb-2 font-medium text-primary-color text-sm">Cara Melayani Pengunjung</h4>
+                                        <p className="text-secondary-color text-xs">Pilih pengunjung dari daftar antrean dan klik tombol &ldquo;Mulai Layanan&rdquo; untuk memulai proses layanan.</p>
+                                    </div>
+                                    <div className="hover:shadow-sm p-3 border border-border rounded-lg transition-all duration-200">
+                                        <h4 className="mb-2 font-medium text-primary-color text-sm">Cara Menyelesaikan Layanan</h4>
+                                        <p className="text-secondary-color text-xs">Setelah selesai melayani pengunjung, klik tombol &ldquo;Selesaikan&rdquo; untuk menandai layanan sebagai selesai.</p>
+                                    </div>
+                                    <div className="hover:shadow-sm p-3 border border-border rounded-lg transition-all duration-200">
+                                        <h4 className="mb-2 font-medium text-primary-color text-sm">Memperbarui Data</h4>
+                                        <p className="text-secondary-color text-xs">Klik tombol &ldquo;Perbarui Data&rdquo; di pojok kanan atas untuk memuat ulang data terbaru.</p>
+                                    </div>
+                                    <div className="hover:shadow-sm p-3 border border-border rounded-lg transition-all duration-200">
+                                        <h4 className="mb-2 font-medium text-primary-color text-sm">Melihat Riwayat</h4>
+                                        <p className="text-secondary-color text-xs">Gunakan halaman &ldquo;Selesai Dilayani&rdquo; untuk melihat riwayat layanan yang sudah selesai.</p>
+                                    </div>
+                                    <div className="hover:shadow-sm p-3 border border-border rounded-lg transition-all duration-200">
+                                        <h4 className="mb-2 font-medium text-primary-color text-sm">Bantuan</h4>
+                                        <p className="text-secondary-color text-xs">Jika Anda memerlukan bantuan lebih lanjut, hubungi administrator sistem.</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </>
             ) : (
                 <div className="bg-surface shadow-md p-6 border border-custom rounded-xl text-center">
