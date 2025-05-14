@@ -14,6 +14,7 @@ import {
     X,
 } from "lucide-react";
 import { useEffect, useState } from "react"; // Added useEffect
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Role } from "@/generated/prisma";
 import { cn } from "@/lib/utils";
@@ -101,8 +102,29 @@ export default function DashboardLayout({
             >
                 <div className="flex flex-col h-full">
                     <div className="p-4 border-sidebar-border border-b">
-                        <h1 className="mb-1 font-bold text-2xl text-center">PST BPS</h1>
-                        <p className="text-xs text-center">Buton Selatan</p>
+                        <Image
+                            src="/antrean_light.png"
+                            alt="Logo Antrean"
+                            width={100}
+                            height={100}
+                            className="dark:hidden block mx-auto mb-2"
+                        />
+                        <Image
+                            src="/antrean_dark.png"
+                            alt="Logo Antrean"
+                            width={100}
+                            height={100}
+                            className="hidden dark:block mx-auto mb-2"
+                        />
+                        <h1 className="font-bold text-center">
+                            Sistem Antrean
+                        </h1>
+                        <p className="text-xs text-center">
+                            Pelayanan Statistik Terpadu
+                        </p>
+                        <p className="text-xs text-center">
+                            BPS Kabupaten Buton Selatan
+                        </p>
                     </div>
 
                     <div className="flex flex-col flex-grow space-y-2 p-4">

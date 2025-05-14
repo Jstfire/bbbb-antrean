@@ -15,6 +15,11 @@ const lato = Lato({
 });
 
 export const metadata: Metadata = {
+  icons: {
+    icon: "/icon_pst.png",
+    shortcut: "/icon_pst.png",
+    apple: "/icon_pst.png",
+  },
   title: "PST BPS Buton Selatan - Sistem Antrean",
   description: "Sistem Antrean Pelayanan Statistik Terpadu BPS Kabupaten Buton Selatan",
 };
@@ -26,6 +31,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" suppressHydrationWarning>
+      <link rel="icon" type="image/png" href="/icon_pst.png" />
       <body className={`${lato.variable} font-lato antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <AuthProvider>
