@@ -9,26 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-// import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-// import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-// import { Switch } from "@/components/ui/switch";
-// import {
-//     Home,
-//     Settings,
-//     User,
-//     FileText,
-//     Calendar,
-//     Search,
-//     BarChart3
-// } from "lucide-react";
 import { toast } from "sonner";
 import UIShowcaseSkeleton from "@/components/ui/ui-showcase-skeleton";
 
 export default function UIShowcasePage() {
-    const [demoSwitch, setDemoSwitch] = useState(false);
     // Using empty destructure pattern as we only need the setter
     const [, setCurrentTheme] = useState("light");
     const [isLoading, setIsLoading] = useState(true);
