@@ -45,8 +45,6 @@ export async function POST(
 		}
 
 		// Generate WhatsApp link with pre-filled message
-		const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
-		const trackingUrl = `${baseUrl}/visitor-form/${queue.tempUuid}`;
 
 		// Clean phone number (remove +62 or 0 prefix and ensure it starts with 62)
 		let phoneNumber = queue.visitor.phone.replace(/\s+/g, "");
