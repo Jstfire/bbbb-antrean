@@ -22,7 +22,7 @@ async function main() {
 
 	// Generate QR Code
 	const qrCodePath = path.join(qrCodeDir, "pst-qrcode.png");
-	const qrCodeUrl = `http://localhost:3000/visitor-form/${staticUuid}`;
+	const qrCodeUrl = `${process.env.NEXT_PUBLIC_AUTH_URL}/visitor-form/${staticUuid}`;
 
 	await QRCode.toFile(qrCodePath, qrCodeUrl, {
 		color: {
