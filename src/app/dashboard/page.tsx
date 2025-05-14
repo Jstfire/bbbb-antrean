@@ -154,7 +154,7 @@ export default function DashboardPage() {
                     )}                    <Button
                         onClick={() => fetchStats(true)} // Call with forceRefresh=true
                         disabled={loading}
-                        className="flex items-center gap-2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--primary-foreground)] transition-colors duration-200"
+                        className="flex items-center gap-2 bg-[var(--primary)] hover:bg-orange-800 transition-colors duration-200"
                         aria-label="Perbarui data statistik"
                     >
                         <RefreshCcw className="w-4 h-4" />

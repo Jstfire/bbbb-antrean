@@ -216,7 +216,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "D:\\__. KERJAAN\\CODE\\bbbb-antrean\\src\\generated\\prisma",
+      "value": "C:\\laragon\\bbbb-antrean\\src\\generated\\prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -230,7 +230,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "D:\\__. KERJAAN\\CODE\\bbbb-antrean\\prisma\\schema.prisma",
+    "sourceFilePath": "C:\\laragon\\bbbb-antrean\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
@@ -244,12 +244,11 @@ const config = {
     "db"
   ],
   "activeProvider": "postgresql",
-  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {
         "fromEnvVar": "DATABASE_URL",
-        "value": null
+        "value": "postgresql://root:@localhost:5432/db_bbbb"
       }
     }
   },

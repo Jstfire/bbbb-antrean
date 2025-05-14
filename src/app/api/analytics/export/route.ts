@@ -1,10 +1,8 @@
-import { PrismaClient } from "@/generated/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth"; // Updated import path
 import { format } from "date-fns";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma"; // Import shared prisma instance
 
 export async function GET(req: NextRequest) {
 	try {
@@ -122,7 +120,5 @@ export async function GET(req: NextRequest) {
 			{ error: "Failed to export analytics data" },
 			{ status: 500 }
 		);
-	} finally {
-		await prisma.$disconnect();
 	}
 }

@@ -1,13 +1,11 @@
-import { PrismaClient } from "@/generated/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-
-const prisma = new PrismaClient();
+import { authOptions } from "@/lib/auth"; // Updated import path
+import prisma from "@/lib/prisma"; // Import shared prisma instance
 
 export async function POST(
 	req: NextRequest,
-	{ params }: { params: { id: string } }
+	{ params }: { params: Promise<{ id: string }> }
 ) {
 	try {
 		// Get the current session to verify authentication
@@ -16,7 +14,7 @@ export async function POST(
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
-		const { id } = params;
+		const { id } = await params;
 		const { message } = await req.json();
 
 		// Validate queue ID
@@ -47,7 +45,7 @@ export async function POST(
 		}
 
 		// Generate WhatsApp link with pre-filled message
-		const baseUrl = process.env.NEXT_PUBLIC_APP_URL;   
+		const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
 		const trackingUrl = `${baseUrl}/visitor-form/${queue.tempUuid}`;
 
 		// Clean phone number (remove +62 or 0 prefix and ensure it starts with 62)
@@ -61,7 +59,7 @@ export async function POST(
 		}
 
 		// Default reminder message
-		const defaultMessage = `Halo ${queue.visitor.name}, mohon kesediaannya untuk mengisi survei kepuasan pelanggan (SKD2025) BPS Buton Selatan melalui link berikut: ${trackingUrl}`;
+		const defaultMessage = `Halo ${queue.visitor.name}, mohon kesediaannya untuk mengisi Survei Kebutuhan Data (SKD) 2025 BPS Buton Selatan melalui link berikut: s.bps.go.id/skd2025_bpsbusel`;
 
 		// Use provided message or default
 		const reminderMessage = message || defaultMessage;
@@ -97,7 +95,5 @@ export async function POST(
 			{ error: "Failed to prepare SKD reminder" },
 			{ status: 500 }
 		);
-	} finally {
-		await prisma.$disconnect();
 	}
 }

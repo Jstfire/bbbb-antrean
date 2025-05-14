@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
 
 		// If it's a new day, start from 1, otherwise increment from the last queue number
 		const nextQueueNumber = latestQueue ? latestQueue.queueNumber + 1 : 1;
+		
 		// Transaction to create visitor and queue
 		const result = await prisma.$transaction(async (tx) => {
 			// Create visitor

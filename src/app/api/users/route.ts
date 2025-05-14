@@ -1,10 +1,9 @@
-import { PrismaClient, Role } from "@/generated/prisma";
+import { Role } from "@/generated/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth"; // Updated import path
 import bcryptjs from "bcryptjs";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma"; // Import shared prisma instance
 
 export async function GET() {
 	try {
@@ -43,8 +42,6 @@ export async function GET() {
 			{ error: "Failed to fetch users" },
 			{ status: 500 }
 		);
-	} finally {
-		await prisma.$disconnect();
 	}
 }
 
@@ -117,7 +114,5 @@ export async function POST(req: NextRequest) {
 			{ error: "Failed to create user" },
 			{ status: 500 }
 		);
-	} finally {
-		await prisma.$disconnect();
 	}
 }

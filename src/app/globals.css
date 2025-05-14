@@ -99,9 +99,9 @@
   --popover-foreground: #FFFFFF; /* Text on popovers */
   --primary: #F79039; /* Primary stays consistent */
   --primary-hover: #FF9F3C; /* Brighter hover for dark mode */
-  --primary-foreground: #1A1A1A; /* Dark text on primary */
+  --primary-foreground: #FFFFFF; /* Dark text on primary */
   --secondary: #FEB856; /* Secondary stays consistent */
-  --secondary-foreground: #1A1A1A; /* Dark text on secondary */
+  --secondary-foreground: #FFFFFF; /* Dark text on secondary */
   --muted: #2A2A2A; /* Muted = surface in dark mode */
   --muted-foreground: #CCCCCC; /* Secondary text */
   --accent: #FF6A5E; /* Accent for dark mode */

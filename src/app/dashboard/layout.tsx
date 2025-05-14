@@ -13,7 +13,7 @@ import {
     Menu,
     X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react"; // Added useEffect
 import { Button } from "@/components/ui/button";
 import { Role } from "@/generated/prisma";
 import { cn } from "@/lib/utils";
@@ -27,7 +27,14 @@ export default function DashboardLayout({
 }>) {
     const [isOpen, setIsOpen] = useState(false);
     const pathname = usePathname();
-    const { data: session } = useSession(); const navItems = [
+    const { data: session, status } = useSession();
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    const navItems = [
         {
             title: "Dashboard",
             href: "/dashboard",
@@ -99,47 +106,61 @@ export default function DashboardLayout({
                     </div>
 
                     <div className="flex flex-col flex-grow space-y-2 p-4">
-                        {navItems
-                            .filter((item) =>
-                                item.allowedRoles.includes(session?.user?.role || Role.ADMIN)
-                            )
-                            .map((item) => (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    onClick={() => setIsOpen(false)}
-                                    className={cn(
-                                        "flex items-center space-x-2 px-4 py-2 rounded-md transition-colors",
-                                        pathname === item.href
-                                            ? "bg-sidebar-primary font-bold"
-                                            : "hover:bg-sidebar-accent/30"
-                                    )}
-                                >
-                                    {item.icon}
-                                    <span>{item.title}</span>
-                                </Link>
-                            ))}
+                        {!isClient && (
+                            <div>Loading navigation...</div>
+                        )}
+                        {isClient && status === "loading" && (
+                            <div>Loading navigation...</div>
+                        )}
+                        {isClient && status === "authenticated" &&
+                            navItems
+                                .filter((item) =>
+                                    item.allowedRoles.includes(session?.user?.role || Role.ADMIN)
+                                )
+                                .map((item) => (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        onClick={() => setIsOpen(false)}
+                                        className={cn(
+                                            "flex items-center space-x-2 px-4 py-2 rounded-md transition-colors",
+                                            pathname === item.href
+                                                ? "bg-sidebar-primary font-bold"
+                                                : "hover:bg-sidebar-accent/30"
+                                        )}
+                                    >
+                                        {item.icon}
+                                        <span>{item.title}</span>
+                                    </Link>
+                                ))}
                     </div>                    <div className="p-4 border-sidebar-border border-t">
-                        <div className="flex justify-between items-center mb-2">
-                            <div>
-                                <p className="font-medium">{session?.user?.name}</p>
-                                <p className="text-sidebar-foreground/70 text-xs">
-                                    {session?.user?.role === Role.SUPERADMIN ? "Super Admin" : "Admin"}
-                                </p>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <NotificationsDropdown />
-                                <ThemeToggle />
-                            </div>
-                        </div>
-                        <Button
-                            variant="outline"
-                            className="flex items-center space-x-2 w-full"
-                            onClick={handleSignOut}
-                        >
-                            <LogOut size={16} />
-                            <span>Logout</span>
-                        </Button>
+                        {!isClient && (
+                            <div>Loading user info...</div>
+                        )}
+                        {isClient && session?.user && (
+                            <>
+                                <div className="flex justify-between items-center mb-2">
+                                    <div>
+                                        <p className="font-medium">{session.user.name}</p>
+                                        <p className="text-sidebar-foreground/70 text-xs">
+                                            {session.user.role === Role.SUPERADMIN ? "Super Admin" : "Admin"}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <NotificationsDropdown />
+                                        <ThemeToggle />
+                                    </div>
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    className="flex items-center space-x-2 w-full"
+                                    onClick={handleSignOut}
+                                >
+                                    <LogOut size={16} />
+                                    <span>Logout</span>
+                                </Button>
+                            </>
+                        )}
                     </div>
                 </div>
             </aside>

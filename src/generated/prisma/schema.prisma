@@ -62,7 +62,7 @@ model Visitor {
 
 model Queue {
   id           String      @id @default(uuid())
-  queueNumber  Int
+  queueNumber  String
   status       QueueStatus @default(WAITING)
   visitorId    String
   visitor      Visitor     @relation(fields: [visitorId], references: [id])

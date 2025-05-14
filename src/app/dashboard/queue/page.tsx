@@ -1,44 +1,22 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Added Select imports
 import { QueueStatus, Role } from "@/generated/prisma";
 import { formatDistance } from "date-fns";
 import { id } from "date-fns/locale";
-import {
-	Dialog,
-	DialogContent,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import { Smartphone, MessageSquareText, AlertCircle, RefreshCw } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-	sendWhatsAppDirectReminder,
-	sendWhatsAppBotReminder,
-} from "@/lib/reminder-service";
+import { RefreshCw, Smartphone, AlertCircle, MessageSquareText } from "lucide-react";
+import { sendWhatsAppDirectReminder, sendWhatsAppBotReminder } from "@/lib/reminder-service";
 import TableSkeleton from "@/components/ui/table-skeleton";
-import { ClientOnlyCurrentTime } from "@/components/client-only-time";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Queue {
 	id: string;
@@ -72,41 +50,50 @@ export default function QueueManagementPage() {
 	const [nextInQueue, setNextInQueue] = useState<Queue | null>(null);
 	const [showRemindSkdDialog, setShowRemindSkdDialog] = useState(false);
 	const [selectedQueue, setSelectedQueue] = useState<Queue | null>(null);
-	const [reminderMessage, setReminderMessage] = useState(""); const [isSendingReminder, setIsSendingReminder] = useState(false);
+	const [reminderMessage, setReminderMessage] = useState("");
+	const [isSendingReminder, setIsSendingReminder] = useState(false);
 	const [reminderError, setReminderError] = useState<string | null>(null);
 	const [dataHash, setDataHash] = useState<string>("");
 	const [needsRefresh, setNeedsRefresh] = useState<boolean>(false);
+	const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
+	const [dateFilter, setDateFilter] = useState<'today' | 'all'>('today'); // Added dateFilter state
 
 	// Efficient polling with change detection
 	const pollForChanges = useCallback(async () => {
 		try {
 			const response = await fetch(
-				`/api/queue?status=${activeTab}&hash=${dataHash}`,
+				`/api/queue?status=${activeTab}&hash=${dataHash}&dateFilter=${dateFilter}`,
 				{
 					credentials: "include",
 				}
 			);
 
 			if (response.ok) {
-				const data = await response.json();				// Only update the queue data if there are changes
+				const data = await response.json();
+				// Only update the queue data if there are changes
 				if (data.hasChanges) {
 					setQueues(data.queues);
 					setDataHash(data.hash);
+					setLastUpdatedAt(new Date());
 				}
 			}
 		} catch (error) {
 			console.error("Error polling for changes:", error);
 		}
-	}, [activeTab, dataHash]); // Initial data loading when tab changes
-	const fetchQueues = useCallback(async (status: QueueStatus) => {
+	}, [activeTab, dataHash, dateFilter]); // Added dateFilter to dependency array
+
+	// Initial data loading when tab changes
+	const fetchQueues = useCallback(async (status: QueueStatus, filter: 'today' | 'all') => {
 		try {
 			setLoading(true);
-			const response = await fetch(`/api/queue?status=${status}`, {
+			const response = await fetch(`/api/queue?status=${status}&dateFilter=${filter}`, {
 				credentials: "include", // Include credentials for authentication
-			}); if (response.ok) {
+			});
+			if (response.ok) {
 				const data = await response.json();
 				setQueues(data.queues);
 				setDataHash(data.hash || "");
+				setLastUpdatedAt(new Date()); // Update lastUpdatedAt
 			} else {
 				toast.error("Gagal memuat daftar antrean");
 			}
@@ -116,15 +103,15 @@ export default function QueueManagementPage() {
 		} finally {
 			setLoading(false);
 		}
-	}, []); // Removed activeTab from dependencies as it's passed as an argument
+	}, []); // Keep dependency array minimal as parameters are passed
 
 	// Initial data loading when tab changes and polling setup
 	useEffect(() => {
-		fetchQueues(activeTab);
+		fetchQueues(activeTab, dateFilter);
 
 		const interval = setInterval(pollForChanges, 30000);
 		return () => clearInterval(interval);
-	}, [activeTab, fetchQueues, pollForChanges]);
+	}, [activeTab, dateFilter, fetchQueues, pollForChanges]); // Added dateFilter
 
 	const handleServeQueue = async (queueId: string) => {
 		try {
@@ -240,7 +227,7 @@ export default function QueueManagementPage() {
 	const handleRemindSKD = (queue: Queue) => {
 		setSelectedQueue(queue);
 		setReminderMessage(
-			`Halo ${queue.visitor.name}, mohon kesediaannya untuk mengisi survei kepuasan pelanggan (SKD2025) BPS Buton Selatan melalui link berikut: ${window.location.origin}/visitor-form/${queue.tempUuid}`
+			`Halo ${queue.visitor.name}, mohon kesediaannya untuk mengisi Survei Kebutuhan Data (SKD) 2025 BPS Buton Selatan melalui link berikut: s.bps.go.id/skd2025_bpsbusel`
 		);
 		setShowRemindSkdDialog(true);
 	}; // Function to prepare WhatsApp message
@@ -502,10 +489,10 @@ export default function QueueManagementPage() {
 	// Additional effect for manual refresh when needed (triggered by actions like serve, complete, cancel)
 	useEffect(() => {
 		if (needsRefresh) {
-			fetchQueues(activeTab);
+			fetchQueues(activeTab, dateFilter); // Pass dateFilter
 			setNeedsRefresh(false);
 		}
-	}, [needsRefresh, activeTab, fetchQueues]);
+	}, [needsRefresh, activeTab, dateFilter, fetchQueues]); // Added dateFilter
 
 	const handleManualRefresh = () => {
 		if (loading) return; // Prevent multiple refreshes if already loading
@@ -514,31 +501,50 @@ export default function QueueManagementPage() {
 			.toUpperCase()
 			+ activeTab.slice(1).toLowerCase().replace("_", " ");
 		toast.info(`Memperbarui data untuk tab "${tabName}"...`);
-		fetchQueues(activeTab); // This function already handles setLoading
+		fetchQueues(activeTab, dateFilter); // Pass dateFilter
 	};
 
 	return (
 		<div className="space-y-4 p-4">
-			<div className="flex justify-between items-center">
+			<div className="flex flex-wrap justify-between items-center gap-4">
 				<div>
 					<h1 className="font-bold text-2xl">Manajemen Antrean</h1>
 					<p className="text-muted-foreground">
 						Kelola antrean pengunjung PST secara langsung
 					</p>
 				</div>
-				<Button variant="outline" size="sm" onClick={handleManualRefresh} disabled={loading}>
-					{loading ? (
-						<>
-							<RefreshCw className="mr-2 w-4 h-4 animate-spin" />
-							Memperbarui...
-						</>
-					) : (
-						<>
-							<RefreshCw className="mr-2 w-4 h-4" />
-							Perbarui Data
-						</>
-					)}
-				</Button>
+				<div className="flex items-center gap-2">
+					<Select value={dateFilter} onValueChange={(value) => setDateFilter(value as 'today' | 'all')}>
+						<SelectTrigger className="w-auto md:w-[180px]">
+							<SelectValue placeholder="Filter tanggal..." />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="today">Dibuat Hari Ini</SelectItem>
+							<SelectItem value="all">Semua</SelectItem>
+						</SelectContent>
+					</Select>
+					<Button onClick={handleManualRefresh} disabled={loading}>
+						{loading ? (
+							<>
+								<RefreshCw className="mr-2 w-4 h-4 animate-spin" />
+								Memperbarui...
+							</>
+						) : (
+							<>
+								<RefreshCw className="mr-2 w-4 h-4" />
+								Perbarui Data
+							</>
+						)}
+					</Button>
+				</div>
+			</div>
+			<div className="text-muted-foreground text-xs md:text-sm">
+				Data per: {lastUpdatedAt
+					? new Intl.DateTimeFormat('id-ID', {
+						year: 'numeric', month: 'short', day: 'numeric',
+						hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+					}).format(lastUpdatedAt)
+					: (loading && !queues.length ? "Memuat data awal..." : "Belum ada data")}
 			</div>
 			<Tabs
 				defaultValue="WAITING"
@@ -552,9 +558,6 @@ export default function QueueManagementPage() {
 					<TabsTrigger value="CANCELED">Dibatalkan</TabsTrigger>
 				</TabsList>				{/* WAITING Tab */}
 				<TabsContent value="WAITING">
-					<div className="mb-2 text-muted-foreground text-xs">
-						Terakhir diperbarui: <ClientOnlyCurrentTime fallback="-" />
-					</div>
 					<Card>
 						<CardHeader>
 							<CardTitle>Antrean Menunggu</CardTitle>
@@ -582,9 +585,6 @@ export default function QueueManagementPage() {
 				</TabsContent>
 
 				{/* SERVING Tab */}				<TabsContent value="SERVING">
-					<div className="mb-2 text-muted-foreground text-xs">
-						Terakhir diperbarui: <ClientOnlyCurrentTime fallback="-" />
-					</div>
 					<Card>
 						<CardHeader>
 							<CardTitle>Antrean Sedang Dilayani</CardTitle>
@@ -612,9 +612,6 @@ export default function QueueManagementPage() {
 				</TabsContent>
 
 				{/* COMPLETED Tab */}				<TabsContent value="COMPLETED">
-					<div className="mb-2 text-muted-foreground text-xs">
-						Terakhir diperbarui: <ClientOnlyCurrentTime fallback="-" />
-					</div>
 					<Card>
 						<CardHeader>
 							<CardTitle>Antrean Selesai</CardTitle>
@@ -642,9 +639,6 @@ export default function QueueManagementPage() {
 				</TabsContent>
 
 				{/* CANCELED Tab */}				<TabsContent value="CANCELED">
-					<div className="mb-2 text-muted-foreground text-xs">
-						Terakhir diperbarui: <ClientOnlyCurrentTime fallback="-" />
-					</div>
 					<Card>
 						<CardHeader>
 							<CardTitle>Antrean Dibatalkan</CardTitle>

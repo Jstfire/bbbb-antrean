@@ -1,13 +1,12 @@
-import { PrismaClient, QueueStatus } from "@/generated/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-
-const prisma = new PrismaClient();
+import { authOptions } from "@/lib/auth"; // Updated import path
+import prisma from "@/lib/prisma"; // Import shared prisma instance
+import { QueueStatus } from "@/generated/prisma"; // Add this import
 
 export async function POST(
 	req: NextRequest,
-	{ params }: { params: { id: string } }
+	{ params }: { params: Promise<{ id: string }> }
 ) {
 	try {
 		// Get the current session to verify authentication
@@ -26,7 +25,7 @@ export async function POST(
 			);
 		}
 
-		const { id } = params;
+		const { id } = await params;
 		console.log(`Attempting to serve queue with ID: ${id}`);
 
 		// Get the queue
@@ -112,7 +111,5 @@ export async function POST(
 			{ error: "Failed to serve queue", details: errorMessage },
 			{ status: 500 }
 		);
-	} finally {
-		await prisma.$disconnect();
 	}
 }

@@ -7,10 +7,10 @@ const prisma = new PrismaClient();
 
 export async function GET(
 	req: NextRequest,
-	{ params }: { params: { uuid: string } }
+	{ params }: { params: Promise<{ uuid: string }> }
 ) {
 	try {
-		const { uuid } =  await params;
+		const { uuid } = await params;
 
 		// Validate static UUID format
 		// if (!validateUuid(uuid)) {

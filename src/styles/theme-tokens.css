@@ -52,8 +52,8 @@
   --card-foreground: var(--text-primary);
   --popover: var(--surface);
   --popover-foreground: var(--text-primary);
-  --primary-foreground: #1A1A1A;
-  --secondary-foreground: #1A1A1A;
+  --primary-foreground: #FFFFFF;
+  --secondary-foreground: #FFFFFF;
   --muted: var(--surface);
   --muted-foreground: var(--text-secondary);
   --accent-foreground: #1A1A1A;

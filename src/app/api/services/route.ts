@@ -1,9 +1,8 @@
-import { PrismaClient, ServiceStatus } from "@/generated/prisma";
+import { ServiceStatus } from "@/generated/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../auth/[...nextauth]/route";
-
-const prisma = new PrismaClient();
+import { authOptions } from "@/lib/auth"; // Updated import path
+import prisma from "@/lib/prisma"; // Import shared prisma instance
 
 export async function GET(req: NextRequest) {
 	try {
@@ -33,8 +32,6 @@ export async function GET(req: NextRequest) {
 			{ error: "Failed to fetch services" },
 			{ status: 500 }
 		);
-	} finally {
-		await prisma.$disconnect();
 	}
 }
 
@@ -72,7 +69,5 @@ export async function POST(req: NextRequest) {
 			{ error: "Failed to create service" },
 			{ status: 500 }
 		);
-	} finally {
-		await prisma.$disconnect();
 	}
 }

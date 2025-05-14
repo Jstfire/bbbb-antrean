@@ -1,21 +1,18 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { toast } from "sonner";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card"; // Removed CardHeader, CardTitle
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"; // Removed DialogDescription
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { QueueStatus } from "@/generated/prisma";
-// import { formatDistance } from "date-fns";
-// import { id } from "date-fns/locale";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, RefreshCw } from "lucide-react";
+import { Label } from "@/components/ui/label"; // Added Label import
+import { QueueStatus } from "@/generated/prisma";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, RefreshCw, Search } from "lucide-react";
 import TableSkeleton from "@/components/ui/table-skeleton";
-import { ClientOnlyCurrentTime } from "@/components/client-only-time";
 
 interface Queue {
     id: string;
@@ -107,8 +104,10 @@ export default function AllQueuesPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [sortColumn, setSortColumn] = useState<string>("queueNumber");
-    const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc"); const [dataHash, setDataHash] = useState<string>("");
+    const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+    const [dataHash, setDataHash] = useState<string>("");
     const [needsRefresh, setNeedsRefresh] = useState<boolean>(false);
+    const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null); // Added lastUpdatedAt state
 
     // New ref for dataHash
     const dataHashRef = useRef(dataHash);
@@ -173,7 +172,7 @@ export default function AllQueuesPage() {
                 const data = await response.json();
                 setQueues(data.queues);
                 setDataHash(data.hash || "");
-                // REMOVED: filterAndSortQueues(); call
+                setLastUpdatedAt(new Date()); // Update lastUpdatedAt
             } else {
                 toast.error("Gagal memuat data antrean");
             }
@@ -204,11 +203,13 @@ export default function AllQueuesPage() {
     // New polling function
     const pollForAllQueuesChanges = useCallback(async () => {
         try {
-            const response = await fetch(`/api/queue/all`); // Fetches all queues and new hash
+            const response = await fetch(`/api/queue/all`);
             if (response.ok) {
-                const data = await response.json(); if (data.hash && data.hash !== dataHashRef.current) {
-                    setQueues(data.queues); // Update queues
-                    setDataHash(data.hash); // Update hash, will trigger dataHashRef update
+                const data = await response.json();
+                if (data.hash && data.hash !== dataHashRef.current) {
+                    setQueues(data.queues);
+                    setDataHash(data.hash);
+                    setLastUpdatedAt(new Date()); // Update lastUpdatedAt
                 }
             }
         } catch (error) {
@@ -355,9 +356,12 @@ export default function AllQueuesPage() {
                                 onChange={handleSearchChange}
                             />
                         </div>
+                    </div>
 
+                    {/* Filters and Actions */}
+                    <div className="flex flex-wrap items-center gap-2">
                         <Select value={statusFilter} onValueChange={handleStatusChange}>
-                            <SelectTrigger className="w-full md:w-[180px]">
+                            <SelectTrigger className="bg-background border-border w-full md:w-[180px]">
                                 <SelectValue placeholder="Filter Status" />
                             </SelectTrigger>
                             <SelectContent>
@@ -368,45 +372,39 @@ export default function AllQueuesPage() {
                                 <SelectItem value="CANCELED">Dibatalkan</SelectItem>
                             </SelectContent>
                         </Select>
-                    </div>
 
-                    <div className="flex md:flex-row flex-col items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <Label htmlFor="pageSize" className="text-sm whitespace-nowrap">
-                                Tampilkan:
-                            </Label>
-                            <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-                                <SelectTrigger id="pageSize" className="w-[80px]">
-                                    <SelectValue placeholder="10" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="5">5</SelectItem>
-                                    <SelectItem value="10">10</SelectItem>
-                                    <SelectItem value="25">25</SelectItem>
-                                    <SelectItem value="50">50</SelectItem>
-                                    <SelectItem value="100">100</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>                        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
+                        <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+                            <SelectTrigger className="bg-background border-border w-full md:w-[120px]">
+                                <SelectValue placeholder="Per Halaman" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="10">10 / Halaman</SelectItem>
+                                <SelectItem value="25">25 / Halaman</SelectItem>
+                                <SelectItem value="50">50 / Halaman</SelectItem>
+                                <SelectItem value="100">100 / Halaman</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <Button onClick={handleRefresh} disabled={loading} className="w-full md:w-auto">
                             {loading ? (
-                                <>
-                                    <span className="mr-2 animate-spin">
-                                        <RefreshCw className="w-4 h-4" />
-                                    </span>
-                                    Memperbarui...
-                                </>
+                                <RefreshCw className="mr-2 w-4 h-4 animate-spin" />
                             ) : (
-                                <>
-                                    <RefreshCw className="mr-2 w-4 h-4" />
-                                    Perbarui
-                                </>
+                                <RefreshCw className="mr-2 w-4 h-4" />
                             )}
+                            Perbarui Data
                         </Button>
                     </div>
-                </div>                <div className="text-muted-foreground text-xs">
-                    Terakhir diperbarui: <ClientOnlyCurrentTime fallback="-" />
-                </div><CardContent className="p-0">
-                    {loading ? (
+                </div>
+                <div className="mt-2 text-muted-foreground text-xs">
+                    Terakhir diperbarui: {lastUpdatedAt
+                        ? new Intl.DateTimeFormat('id-ID', {
+                            year: 'numeric', month: 'short', day: 'numeric',
+                            hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+                        }).format(lastUpdatedAt)
+                        : (loading && !queues.length ? "Memuat data awal..." : "Belum ada data")}
+                </div>
+                <CardContent className="mt-4 p-0">
+                    {loading && paginatedQueues.length === 0 ? (
                         <TableSkeleton columns={6} rows={10} />
                     ) : filteredQueues.length === 0 ? (
                         <div className="py-8 text-center">Tidak ada antrean yang sesuai dengan filter</div>

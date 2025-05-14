@@ -1,52 +1,74 @@
-import { PrismaClient } from "@/generated/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-
-const prisma = new PrismaClient();
+import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 
 export async function POST(
 	req: NextRequest,
 	{ params }: { params: { id: string } }
 ) {
 	try {
-		// Get the current session to verify authentication
 		const session = await getServerSession(authOptions);
-		if (!session) {
+		if (!session || !session.user || !session.user.id) {
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
-		const notificationId = params.id;
+		const { id: notificationId } = params;
 
-		// Mark the specific notification as read
-		const updatedNotification = await prisma.notification.update({
+		const notification = await prisma.notification.findUnique({
 			where: {
 				id: notificationId,
-				OR: [{ userId: null }, { userId: session.user.id }],
-			},
-			data: {
-				isRead: true,
 			},
 		});
 
-		if (!updatedNotification) {
+		if (!notification) {
 			return NextResponse.json(
 				{ error: "Notification not found" },
 				{ status: 404 }
 			);
 		}
 
+		if (
+			notification.userId !== null &&
+			notification.userId !== session.user.id
+		) {
+			return NextResponse.json(
+				{
+					error:
+						"Forbidden: You are not authorized to update this notification",
+				},
+				{ status: 403 }
+			);
+		}
+
+		if (notification.isRead) {
+			return NextResponse.json({
+				success: true,
+				message: "Notification was already marked as read",
+				notification,
+			});
+		}
+
+		const updatedNotification = await prisma.notification.update({
+			where: {
+				id: notificationId,
+			},
+			data: {
+				isRead: true,
+			},
+		});
+
 		return NextResponse.json({
 			success: true,
 			message: "Notification marked as read",
+			notification: updatedNotification,
 		});
-	} catch (error) {
+	} catch (error: unknown) {
 		console.error("Error marking notification as read:", error);
-		return NextResponse.json(
-			{ error: "Failed to mark notification as read" },
-			{ status: 500 }
-		);
-	} finally {
-		await prisma.$disconnect();
+		let errorMessage = "Failed to process request to mark notification as read";
+		if (error instanceof Error) {
+			errorMessage = error.message;
+		}
+		return NextResponse.json({ error: errorMessage }, { status: 500 });
 	}
 }

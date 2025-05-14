@@ -1,15 +1,14 @@
-import { PrismaClient, Role } from "@/generated/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth"; // Updated import path
 import bcryptjs from "bcryptjs";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma"; // Import shared prisma instance
+import { Role } from "@/generated/prisma"; // Add this import
 
 // PATCH - Update a user
 export async function PATCH(
 	req: NextRequest,
-	{ params }: { params: { id: string } }
+	{ params }: { params: Promise<{ id: string }> }
 ) {
 	try {
 		// Get the current session to verify authentication
@@ -26,7 +25,7 @@ export async function PATCH(
 			);
 		}
 
-		const { id } = params;
+		const { id } = await params;
 		const data = await req.json();
 		const { name, username, password } = data;
 
@@ -93,15 +92,13 @@ export async function PATCH(
 			{ error: "Failed to update user" },
 			{ status: 500 }
 		);
-	} finally {
-		await prisma.$disconnect();
 	}
 }
 
 // DELETE - Delete a user
 export async function DELETE(
 	req: NextRequest,
-	{ params }: { params: { id: string } }
+	{ params }: { params: Promise<{ id: string }> }
 ) {
 	try {
 		// Get the current session to verify authentication
@@ -118,7 +115,7 @@ export async function DELETE(
 			);
 		}
 
-		const { id } = params;
+		const { id } = await params;
 
 		// Check if user exists
 		const existingUser = await prisma.user.findUnique({
@@ -151,7 +148,5 @@ export async function DELETE(
 			{ error: "Failed to delete user" },
 			{ status: 500 }
 		);
-	} finally {
-		await prisma.$disconnect();
 	}
 }

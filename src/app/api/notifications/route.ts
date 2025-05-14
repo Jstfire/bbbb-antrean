@@ -1,10 +1,8 @@
-import { PrismaClient } from "@/generated/prisma";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth"; // Updated import path
 import crypto from "crypto";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma"; // Import shared prisma instance
 
 export async function GET(request: Request) {
 	try {
@@ -55,8 +53,6 @@ export async function GET(request: Request) {
 			{ error: "Failed to fetch notifications" },
 			{ status: 500 }
 		);
-	} finally {
-		await prisma.$disconnect();
 	}
 }
 
@@ -109,7 +105,5 @@ export async function POST() {
 			{ error: "Failed to mark notifications as read" },
 			{ status: 500 }
 		);
-	} finally {
-		await prisma.$disconnect();
 	}
 }

@@ -1,10 +1,8 @@
-import { PrismaClient } from "@/generated/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth"; // Updated import path
 import { createHash } from "crypto";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma"; // Import shared prisma instance
 
 // Function to generate a hash of queue data to detect changes
 function generateQueueHash(queues: Record<string, unknown>[]): string {
@@ -77,7 +75,5 @@ export async function GET(req: NextRequest) {
 			{ error: "Failed to fetch queues" },
 			{ status: 500 }
 		);
-	} finally {
-		await prisma.$disconnect();
 	}
 }

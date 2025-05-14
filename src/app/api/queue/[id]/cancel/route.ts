@@ -1,13 +1,12 @@
-import { PrismaClient, QueueStatus, Role } from "@/generated/prisma";
+import { QueueStatus, Role } from "@/generated/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-
-const prisma = new PrismaClient();
+import { authOptions } from "@/lib/auth"; // Updated import path
+import prisma from "@/lib/prisma"; // Import shared prisma instance
 
 export async function POST(
 	req: NextRequest,
-	{ params }: { params: { id: string } }
+	{ params }: { params: Promise<{ id: string }> }
 ) {
 	try {
 		// Get the current session to verify authentication
@@ -16,7 +15,7 @@ export async function POST(
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
-		const { id } = params;
+		const { id } = await params;
 
 		// Get the queue
 		const queue = await prisma.queue.findUnique({
@@ -28,7 +27,10 @@ export async function POST(
 		}
 
 		// Only waiting or serving queues can be canceled
-		const allowedStatuses: QueueStatus[] = [QueueStatus.WAITING, QueueStatus.SERVING];
+		const allowedStatuses: QueueStatus[] = [
+			QueueStatus.WAITING,
+			QueueStatus.SERVING,
+		];
 		if (!allowedStatuses.includes(queue.status)) {
 			return NextResponse.json(
 				{ error: "Queue cannot be canceled in its current state" },
@@ -79,7 +81,5 @@ export async function POST(
 			{ error: "Failed to cancel queue" },
 			{ status: 500 }
 		);
-	} finally {
-		await prisma.$disconnect();
 	}
 }

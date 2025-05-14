@@ -1,13 +1,11 @@
-import { PrismaClient } from "@/generated/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../../auth/[...nextauth]/route";
-
-const prisma = new PrismaClient();
+import { authOptions } from "@/lib/auth"; // Updated import path
+import prisma from "@/lib/prisma"; // Import shared prisma instance
 
 export async function GET(
 	req: NextRequest,
-	{ params }: { params: { id: string } }
+	{ params }: { params: Promise<{ id: string }> }
 ) {
 	try {
 		// Check authentication
@@ -16,7 +14,7 @@ export async function GET(
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
-		const id = params.id;
+		const { id } = await params;
 		if (!id) {
 			return NextResponse.json(
 				{ error: "Service ID is required" },
@@ -40,14 +38,12 @@ export async function GET(
 			{ error: "Failed to fetch service" },
 			{ status: 500 }
 		);
-	} finally {
-		await prisma.$disconnect();
 	}
 }
 
 export async function PATCH(
 	req: NextRequest,
-	{ params }: { params: { id: string } }
+	{ params }: { params: Promise<{ id: string }> }
 ) {
 	try {
 		// Check authentication
@@ -56,7 +52,7 @@ export async function PATCH(
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
-		const id = params.id;
+		const { id } = await params;
 		if (!id) {
 			return NextResponse.json(
 				{ error: "Service ID is required" },
@@ -104,14 +100,12 @@ export async function PATCH(
 			{ error: "Failed to update service" },
 			{ status: 500 }
 		);
-	} finally {
-		await prisma.$disconnect();
 	}
 }
 
 export async function DELETE(
 	req: NextRequest,
-	{ params }: { params: { id: string } }
+	{ params }: { params: Promise<{ id: string }> }
 ) {
 	try {
 		// Check authentication
@@ -120,7 +114,7 @@ export async function DELETE(
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
-		const id = params.id;
+		const { id } = await params;
 		if (!id) {
 			return NextResponse.json(
 				{ error: "Service ID is required" },
@@ -149,7 +143,5 @@ export async function DELETE(
 			{ error: "Failed to delete service" },
 			{ status: 500 }
 		);
-	} finally {
-		await prisma.$disconnect();
 	}
 }

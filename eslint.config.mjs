@@ -11,6 +11,19 @@ const compat = new FlatCompat({
 
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+  // Ignore generated Prisma files from linting
+  {
+    ignores: ["src/generated/prisma/**"],
+  },
+  // Disable problematic rules for generated files
+  {
+    files: ["src/generated/prisma/**/*.js", "src/generated/prisma/**/*.ts"],
+    rules: {
+      '@typescript-eslint/no-unused-expressions': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
 ];
 
 export default eslintConfig;

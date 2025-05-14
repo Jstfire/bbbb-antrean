@@ -1,10 +1,9 @@
-import { PrismaClient, QueueStatus } from "@/generated/prisma";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth"; // Updated import path
 import crypto from "crypto";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma"; // Import shared prisma instance
+import { QueueStatus } from "@/generated/prisma"; // Add this import
 
 export async function GET(request: Request) {
 	try {
@@ -151,7 +150,5 @@ export async function GET(request: Request) {
 			{ error: "Failed to fetch statistics" },
 			{ status: 500 }
 		);
-	} finally {
-		await prisma.$disconnect();
 	}
 }
