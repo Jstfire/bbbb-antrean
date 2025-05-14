@@ -21,6 +21,8 @@ import { Role } from "@/generated/prisma";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
 import NotificationsDropdown from "@/components/dashboard/notifications-dropdown";
+import NavigationSkeleton from "@/components/ui/navigation-skeleton";
+import UserInfoSkeleton from "@/components/ui/user-info-skeleton";
 
 export default function DashboardLayout({
     children,
@@ -132,14 +134,12 @@ export default function DashboardLayout({
                         <p className="text-xs text-center">
                             BPS Kabupaten Buton Selatan
                         </p>
-                    </div>
-
-                    <div className="flex flex-col flex-grow space-y-2 p-4">
+                    </div>                    <div className="flex flex-col flex-grow space-y-2 p-4">
                         {!isClient && (
-                            <div>Loading navigation...</div>
+                            <NavigationSkeleton />
                         )}
                         {isClient && status === "loading" && (
-                            <div>Loading navigation...</div>
+                            <NavigationSkeleton />
                         )}
                         {isClient && status === "authenticated" &&
                             navItems
@@ -164,7 +164,10 @@ export default function DashboardLayout({
                                 ))}
                     </div>                    <div className="p-4 border-sidebar-border border-t">
                         {!isClient && (
-                            <div>Loading user info...</div>
+                            <UserInfoSkeleton />
+                        )}
+                        {isClient && status === "loading" && (
+                            <UserInfoSkeleton />
                         )}
                         {isClient && session?.user && (
                             <>

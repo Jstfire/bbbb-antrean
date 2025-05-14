@@ -13,6 +13,7 @@ import { Role, ServiceStatus } from "@/generated/prisma";
 import { useRouter } from "next/navigation";
 import { Pencil, Trash2, Plus, Power, PowerOff } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import ServicesManagementSkeleton from "@/components/ui/services-management-skeleton";
 
 interface Service {
     id: string;
@@ -259,11 +260,10 @@ export default function ServicesManagementPage() {
                     <CardTitle>Daftar Layanan</CardTitle>
                     <CardDescription>
                         Daftar semua layanan yang tersedia di sistem antrean
-                    </CardDescription>
-                </CardHeader>
+                    </CardDescription>                </CardHeader>
                 <CardContent>
                     {loading ? (
-                        <div className="py-4 text-center">Memuat data layanan...</div>
+                        <ServicesManagementSkeleton />
                     ) : services.length === 0 ? (
                         <div className="py-4 text-center">Tidak ada layanan saat ini</div>
                     ) : (
@@ -285,8 +285,8 @@ export default function ServicesManagementPage() {
                                                 <div className="flex items-center space-x-2">
                                                     <div
                                                         className={`w-3 h-3 rounded-full ${service.status === ServiceStatus.ACTIVE
-                                                                ? "bg-green-500"
-                                                                : "bg-red-500"
+                                                            ? "bg-green-500"
+                                                            : "bg-red-500"
                                                             }`}
                                                     />
                                                     <span>
@@ -306,8 +306,8 @@ export default function ServicesManagementPage() {
                                                         size="sm"
                                                         onClick={() => handleToggleServiceStatus(service)}
                                                         title={`${service.status === ServiceStatus.ACTIVE
-                                                                ? "Nonaktifkan"
-                                                                : "Aktifkan"
+                                                            ? "Nonaktifkan"
+                                                            : "Aktifkan"
                                                             } layanan`}
                                                     >
                                                         {service.status === ServiceStatus.ACTIVE ? (

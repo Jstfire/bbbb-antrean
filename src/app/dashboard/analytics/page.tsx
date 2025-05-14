@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 // import { QueueStatus, Role } from "@/generated/prisma";
 import { BarChart, DownloadIcon, PieChart, RefreshCcw } from "lucide-react";
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell } from "recharts";
+import AnalyticsSkeleton from "@/components/ui/analytics-skeleton";
 
 interface AnalyticsData {
     summary: {
@@ -308,13 +309,10 @@ export default function AnalyticsPage() {
                 >
                     <RefreshCcw className="w-4 h-4" />
                     <span>Perbarui Data</span>
-                </Button>
-            </div>
+                </Button>            </div>
 
             {loading ? (
-                <div className="flex justify-center items-center min-h-[400px]">
-                    <p>Memuat data analitik...</p>
-                </div>
+                <AnalyticsSkeleton />
             ) : analyticsData ? (
                 <div className="space-y-6">
                     {/* Summary Cards */}

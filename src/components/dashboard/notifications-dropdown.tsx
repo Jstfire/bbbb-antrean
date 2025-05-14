@@ -219,7 +219,7 @@ export default function NotificationsDropdown() {
                     ) : notifications.length > 0 ? (notifications.map((notification) => (
                         <DropdownMenuItem
                             key={notification.id}
-                            className="focus:bg-accent p-3 cursor-pointer"
+                            className="focus:bg-secondary p-3 focus:text-accent cursor-pointer"
                             onClick={() => handleNotificationClick(notification)}
                         >
                             <div className="space-y-1 w-full">

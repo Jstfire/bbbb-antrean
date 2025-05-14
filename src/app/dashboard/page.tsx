@@ -8,6 +8,8 @@ import { Role } from "@/generated/prisma";
 import Link from "next/link";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Hourglass, Users, CheckCircle, XCircle, RefreshCcw, Settings } from "lucide-react";
+import AuthLoadingSkeleton from "@/components/ui/auth-loading-skeleton";
+import DashboardSkeleton from "@/components/ui/dashboard-skeleton";
 
 interface DashboardStats {
     counts: {
@@ -114,22 +116,13 @@ export default function DashboardPage() {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             if (pollTimer) clearTimeout(pollTimer);
         };
-    }, [fetchStats, session]);
-
-    if (!session && loading) {
-        return (
-            <div className="flex justify-center items-center min-h-[400px]">
-                <p className="text-primary-color">Loading session...</p>
-            </div>
-        );
+    }, [fetchStats, session]); if (!session && loading) {
+        // Use Auth Loading Skeleton component for better UX
+        return <AuthLoadingSkeleton />;
     }
 
     if (!session) {
-        return (
-            <div className="flex justify-center items-center min-h-[400px]">
-                <p className="text-primary-color">Authenticating...</p>
-            </div>
-        );
+        return <AuthLoadingSkeleton />;
     }
 
     return (
@@ -169,12 +162,8 @@ export default function DashboardPage() {
                         hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
                     }).format(lastUpdatedAt)
                     : (loading && !stats ? "Memuat data awal..." : "Belum ada data")}
-            </div>
-
-            {loading && !stats ? (
-                <div className="flex justify-center items-center bg-surface rounded-xl min-h-[200px] animate-pulse">
-                    <p className="text-secondary-color">Memuat statistik...</p>
-                </div>
+            </div>            {loading && !stats ? (
+                <DashboardSkeleton />
             ) : stats ? (
                 <>
                     {/* Metric Cards */}

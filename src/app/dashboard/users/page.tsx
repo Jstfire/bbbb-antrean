@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Role } from "@/generated/prisma";
 import { useRouter } from "next/navigation";
 import { Pencil, Trash2, UserPlus } from "lucide-react";
+import UsersManagementSkeleton from "@/components/ui/users-management-skeleton";
 
 interface User {
     id: string;
@@ -270,11 +271,10 @@ export default function UsersManagementPage() {
                     <CardTitle>Daftar Admin</CardTitle>
                     <CardDescription>
                         Daftar pengguna admin yang dapat mengelola sistem antrean
-                    </CardDescription>
-                </CardHeader>
+                    </CardDescription>                </CardHeader>
                 <CardContent>
                     {loading ? (
-                        <div className="py-4 text-center">Memuat data admin...</div>
+                        <UsersManagementSkeleton />
                     ) : users.length === 0 ? (
                         <div className="py-4 text-center">Tidak ada admin saat ini</div>
                     ) : (

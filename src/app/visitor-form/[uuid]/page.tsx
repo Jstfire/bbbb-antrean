@@ -42,6 +42,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ClientTimestamp } from "@/components/client-timestamp";
 import { ThemeToggle } from "@/components/theme-toggle";
+import VisitorFormSkeleton from "@/components/ui/visitor-form-skeleton";
 
 interface Service {
     id: string;
@@ -403,37 +404,9 @@ export default function VisitorFormPage({
         } finally {
             setIsLoading(false);
         }
-    }; // Render loading state
+    };    // Render loading state
     if (isLoading) {
-        return (
-            <div className="relative flex justify-center items-center bg-background p-4 min-h-screen">
-                {/* Theme toggle button at top right */}
-                <div className="top-4 right-4 z-10 absolute">
-                    <ThemeToggle />
-                </div>
-                <Card className="w-full max-w-md">
-                    <CardHeader className="text-center">
-                        <CardTitle className="text-primary">
-                            <div className="bg-muted mx-auto rounded w-3/4 h-8 animate-pulse"></div>
-                        </CardTitle>
-                        <CardDescription>
-                            <div className="bg-muted mt-2 rounded w-full h-6 animate-pulse"></div>
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex flex-col items-center space-y-6 py-4">
-                        <Loader2 className="w-16 h-16 text-primary animate-spin" />
-                        <div className="space-y-8 w-full">
-                            <div className="bg-muted rounded w-full h-12 animate-pulse"></div>
-                            <div className="bg-muted rounded w-full h-12 animate-pulse"></div>
-                            <div className="bg-muted rounded w-full h-12 animate-pulse"></div>
-                        </div>
-                        <p className="mt-4 text-muted-foreground text-center">
-                            Memuat data antrean...
-                        </p>
-                    </CardContent>
-                </Card>
-            </div>
-        );
+        return <VisitorFormSkeleton />;
     }
 
     // Render tracking view
@@ -799,12 +772,11 @@ export default function VisitorFormPage({
                 </Card>
             ) : (
                 <Card className="w-full max-w-md">
-                    <CardHeader className="text-center">
-                        <CardTitle className="text-primary">
-                            <div className="bg-muted mx-auto rounded w-3/4 h-8 animate-pulse"></div>
-                        </CardTitle>
+                    <CardHeader className="text-center">                        <CardTitle className="text-primary">
+                        <div className="bg-secondary mx-auto rounded w-3/4 h-8 animate-pulse"></div>
+                    </CardTitle>
                         <CardDescription>
-                            <div className="bg-muted mt-2 rounded w-full h-6 animate-pulse"></div>
+                            <div className="bg-secondary mt-2 rounded w-full h-6 animate-pulse"></div>
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col items-center space-y-6 py-4">
