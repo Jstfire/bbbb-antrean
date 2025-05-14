@@ -32,9 +32,9 @@ export async function GET(req: NextRequest) {
 		// Get all queues for today, without filtering by status
 		const queues = await prisma.queue.findMany({
 			where: {
-				createdAt: {
-					gte: today,
-				},
+				// createdAt: {
+				// 	gte: today,
+				// },
 			},
 			include: {
 				visitor: {

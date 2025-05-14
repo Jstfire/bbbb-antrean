@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use, useCallback } from "react";
+import { useEffect, useState, useCallback, use } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,9 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ServiceStatus } from "@/generated/prisma";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, CheckCircle, Clock, Loader2 } from "lucide-react";
+import { AlertCircle, CheckCircle, Clock, Loader2, RefreshCcw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ClientCurrentTime, ClientTimestamp } from "@/components/client-timestamp";
+import { ClientTimestamp } from "@/components/client-timestamp";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 interface Service {
     id: string;
@@ -57,12 +58,13 @@ export default function VisitorFormPage({ params }: { params: Promise<{ uuid: st
         visitorName: string;
         redirectUrl?: string;
     } | null>(null);
-    const [trackingInfo, setTrackingInfo] = useState<QueueTrackingInfo | null>(null); const [trackingStatus, setTrackingStatus] = useState<string | null>(null);
-    const [trackingMessage, setTrackingMessage] = useState<string | null>(null);
+    const [trackingInfo, setTrackingInfo] = useState<QueueTrackingInfo | null>(null);
+    const [trackingStatus, setTrackingStatus] = useState<string | null>(null); const [trackingMessage, setTrackingMessage] = useState<string | null>(null);
     const [showForm, setShowForm] = useState(false); // Control when to show the form
     const [queueHash, setQueueHash] = useState<string>("");
+    const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null); // Track when the data was last updated
 
-    // Get the UUID from params using React.use()
+    // Get the UUID from params
     const { uuid } = use(params);
 
     // Get search params to check for direct form flag
@@ -79,25 +81,24 @@ export default function VisitorFormPage({ params }: { params: Promise<{ uuid: st
             serviceId: "",
         },
     });    // Function to check tracking status
-    const checkTrackingStatus = useCallback(async () => {
+    const checkTrackingStatus = useCallback(async (forceRefresh: boolean = false) => {
         try {
-            // Only show loading indicator on initial load
-            if (!trackingInfo) {
+            // Only show loading indicator on initial load or forced refresh
+            if (!trackingInfo || forceRefresh) {
                 setIsLoading(true);
             }
 
             const response = await fetch(`/api/visitor-form/track`, {
                 headers: {
                     "x-visitor-uuid": uuid,
-                    "x-queue-hash": queueHash // Send the current hash to enable change detection
+                    // Only send hash for change detection if not forcing refresh
+                    ...((!forceRefresh && queueHash) ? { "x-queue-hash": queueHash } : {})
                 },
             });
 
             if (response.ok) {
-                const data = await response.json();
-
-                // Only update the UI if there are changes to the tracking data or this is the first load
-                if (data.hasChanges || !trackingInfo) {
+                const data = await response.json();                // Only update the UI if there are changes to the tracking data, this is the first load, or we're forcing a refresh
+                if (data.hasChanges || !trackingInfo || forceRefresh) {
                     if (data.tracking.status === "SUCCESS") {
                         setTrackingInfo(data.tracking.queue);
                         setTrackingStatus("SUCCESS");
@@ -105,6 +106,8 @@ export default function VisitorFormPage({ params }: { params: Promise<{ uuid: st
                         setIsValid(true);
                         // Store the hash for future comparisons
                         setQueueHash(data.hash || "");
+                        // Update the last updated timestamp
+                        setLastUpdatedAt(new Date());
                     } else if (data.tracking.status === "NOT_SUBMITTED") {
                         setTrackingStatus("NOT_SUBMITTED");
                         setTrackingMessage(data.tracking.message);
@@ -126,7 +129,10 @@ export default function VisitorFormPage({ params }: { params: Promise<{ uuid: st
                 setTrackingStatus(null);
             }
         } finally {
-            setIsLoading(false);
+            // Only update loading state for initial load or manual refresh
+            if (!trackingInfo || forceRefresh) {
+                setIsLoading(false);
+            }
         }
     }, [uuid, queueHash, trackingInfo, isTracking]);
 
@@ -189,15 +195,43 @@ export default function VisitorFormPage({ params }: { params: Promise<{ uuid: st
         }
     }, [uuid, isTracking, trackingStatus, checkTrackingStatus]);    // Setup polling for tracking status updates with hash-based change detection
     useEffect(() => {
-        let pollingInterval: NodeJS.Timeout;
+        let pollingInterval: NodeJS.Timeout | null = null;
 
         if (isTracking && trackingStatus === "SUCCESS" && trackingInfo?.status !== "COMPLETED") {
-            // Use a longer interval since we're using hash-based change detection
-            pollingInterval = setInterval(checkTrackingStatus, 30000); // Refresh every 30 seconds
+            // Function to poll for changes
+            const pollForChanges = () => {
+                if (document.visibilityState === "visible") {
+                    checkTrackingStatus(false); // Don't force refresh on polling
+                }
+
+                // Schedule next poll
+                pollingInterval = setTimeout(pollForChanges, 30000); // Refresh every 30 seconds
+            };
+
+            // Start polling
+            pollingInterval = setTimeout(pollForChanges, 30000);
+
+            // Track document visibility to pause polling when tab is not visible
+            const handleVisibilityChange = () => {
+                if (document.visibilityState === "visible" && pollingInterval === null) {
+                    // Resume polling when tab becomes visible again
+                    checkTrackingStatus(false);
+                    pollingInterval = setTimeout(pollForChanges, 30000);
+                }
+            };
+
+            // Add visibility change listener
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+
+            return () => {
+                document.removeEventListener('visibilitychange', handleVisibilityChange);
+                if (pollingInterval) clearTimeout(pollingInterval);
+            };
         }
 
+        // Cleanup
         return () => {
-            if (pollingInterval) clearInterval(pollingInterval);
+            if (pollingInterval) clearTimeout(pollingInterval);
         };
     }, [isTracking, trackingStatus, trackingInfo, checkTrackingStatus]);
 
@@ -274,12 +308,12 @@ export default function VisitorFormPage({ params }: { params: Promise<{ uuid: st
                     tempUuid: uuid,
                     filled: true,
                 }),
-            });
-
-            if (response.ok) {
+            }); if (response.ok) {
                 toast.success("Terima kasih! Status SKD telah diperbarui");
                 // Refresh tracking info to show updated SKD status
                 await checkTrackingStatus();
+                // Update last updated time
+                setLastUpdatedAt(new Date());
             } else {
                 toast.error("Gagal memperbarui status SKD");
             }
@@ -292,7 +326,11 @@ export default function VisitorFormPage({ params }: { params: Promise<{ uuid: st
     };    // Render loading state
     if (isLoading) {
         return (
-            <div className="flex justify-center items-center bg-background p-4 min-h-screen">
+            <div className="relative flex justify-center items-center bg-background p-4 min-h-screen">
+                {/* Theme toggle button at top right */}
+                <div className="top-4 right-4 z-10 absolute">
+                    <ThemeToggle />
+                </div>
                 <Card className="w-full max-w-md">
                     <CardHeader className="text-center">
                         <CardTitle className="text-primary">
@@ -321,15 +359,29 @@ export default function VisitorFormPage({ params }: { params: Promise<{ uuid: st
     // Render tracking view
     if (isTracking && trackingInfo) {
         return (
-            <div className="flex justify-center items-center bg-background p-4 min-h-screen">
-                <Card className="w-full max-w-md">
-                    <CardHeader>
-                        <CardTitle className="text-primary text-center">Status Antrean</CardTitle>
-                        <CardDescription className="text-center">
-                            BPS Kabupaten Buton Selatan
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
+            <div className="relative flex justify-center items-center bg-background p-4 min-h-screen">
+                {/* Theme toggle button at top right */}
+                <div className="top-4 right-4 z-10 absolute">
+                    <ThemeToggle />
+                </div>
+                <Card className="w-full max-w-md">                    <CardHeader>
+                    <div className="flex justify-between items-center">
+                        <CardTitle className="text-primary">Status Antrean</CardTitle>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => checkTrackingStatus(true)}
+                            disabled={isLoading}
+                            className="flex items-center gap-1"
+                        >
+                            <RefreshCcw className="w-3 h-3" />
+                            <span>{isLoading ? "Memuat..." : "Perbarui"}</span>
+                        </Button>
+                    </div>
+                    <CardDescription className="text-center">
+                        BPS Kabupaten Buton Selatan
+                    </CardDescription>
+                </CardHeader><CardContent className="space-y-6">
                         <div className="flex flex-col justify-center items-center space-y-2">
                             <p className="font-bold text-accent text-4xl">{trackingInfo.queueNumber}</p>
                             <p className="text-lg">Nomor Antrean Anda</p>
@@ -428,7 +480,11 @@ export default function VisitorFormPage({ params }: { params: Promise<{ uuid: st
 
                     </CardContent>                    <CardFooter className="flex justify-center">
                         <p className="text-muted-foreground text-xs text-center">
-                            Status antrean diperbarui secara otomatis setiap 30 detik. Terakhir diperbarui: <ClientCurrentTime locale="id-ID" />
+                            Status antrean diperbarui otomatis saat ada perubahan. Klik &quot;Perbarui&quot; untuk pembaruan manual. Terakhir diperbarui: {lastUpdatedAt
+                                ? new Intl.DateTimeFormat('id-ID', {
+                                    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+                                }).format(lastUpdatedAt)
+                                : "Baru saja"}
                         </p>
                     </CardFooter>
                 </Card>
@@ -488,7 +544,11 @@ export default function VisitorFormPage({ params }: { params: Promise<{ uuid: st
             </div>
         );
     } return (
-        <div className="flex justify-center items-center bg-background p-4 min-h-screen">
+        <div className="relative flex justify-center items-center bg-background p-4 min-h-screen">
+            {/* Theme toggle button at top right */}
+            <div className="top-4 right-4 z-10 absolute">
+                <ThemeToggle />
+            </div>
             {showForm ? (
                 <Card className="w-full max-w-md">
                     <CardHeader>

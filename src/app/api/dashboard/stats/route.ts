@@ -2,16 +2,21 @@ import { PrismaClient, QueueStatus } from "@/generated/prisma";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import crypto from "crypto";
 
 const prisma = new PrismaClient();
 
-export async function GET() {
+export async function GET(request: Request) {
 	try {
 		// Check authentication
 		const session = await getServerSession(authOptions);
 		if (!session) {
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
+
+		// Get the client's hash if provided
+		const url = new URL(request.url);
+		const clientHash = url.searchParams.get("hash");
 
 		// Get the start of today
 		const today = new Date();
@@ -21,36 +26,36 @@ export async function GET() {
 		const waitingCount = await prisma.queue.count({
 			where: {
 				status: QueueStatus.WAITING,
-				createdAt: {
-					gte: today,
-				},
+				// createdAt: {
+				// 	gte: today,
+				// },
 			},
 		});
 
 		const servingCount = await prisma.queue.count({
 			where: {
 				status: QueueStatus.SERVING,
-				createdAt: {
-					gte: today,
-				},
+				// createdAt: {
+				// 	gte: today,
+				// },
 			},
 		});
 
 		const completedCount = await prisma.queue.count({
 			where: {
 				status: QueueStatus.COMPLETED,
-				createdAt: {
-					gte: today,
-				},
+				// createdAt: {
+				// 	gte: today,
+				// },
 			},
 		});
 
 		const canceledCount = await prisma.queue.count({
 			where: {
 				status: QueueStatus.CANCELED,
-				createdAt: {
-					gte: today,
-				},
+				// createdAt: {
+				// 	gte: today,
+				// },
 			},
 		});
 
@@ -63,9 +68,9 @@ export async function GET() {
 				status: {
 					in: [QueueStatus.COMPLETED, QueueStatus.SERVING],
 				},
-				createdAt: {
-					gte: today,
-				},
+				// createdAt: {
+				// 	gte: today,
+				// },
 				startTime: {
 					not: null,
 				},
@@ -111,7 +116,8 @@ export async function GET() {
 				? Math.round(totalServiceTimeMs / serviceCount / (1000 * 60))
 				: 0;
 
-		return NextResponse.json({
+		// Prepare the data to be returned
+		const statsData = {
 			counts: {
 				waiting: waitingCount,
 				serving: servingCount,
@@ -123,6 +129,21 @@ export async function GET() {
 				waitTimeMinutes: avgWaitTimeMinutes,
 				serviceTimeMinutes: avgServiceTimeMinutes,
 			},
+		};
+
+		// Generate a hash based on stats data
+		const statsDataString = JSON.stringify(statsData);
+		const hash = crypto.createHash("md5").update(statsDataString).digest("hex");
+
+		// If client sent a hash and it matches our current hash,
+		// that means there are no changes
+		const hasChanges = !clientHash || clientHash !== hash;
+
+		// Return the stats with the hash and a flag indicating changes
+		return NextResponse.json({
+			...statsData,
+			hash,
+			hasChanges,
 		});
 	} catch (error) {
 		console.error("Error fetching dashboard stats:", error);

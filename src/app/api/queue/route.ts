@@ -37,9 +37,9 @@ export async function GET(req: NextRequest) {
 		const queues = await prisma.queue.findMany({
 			where: {
 				status,
-				createdAt: {
-					gte: today,
-				},
+				// createdAt: {
+				// 	gte: today,
+				// },
 			},
 			include: {
 				visitor: {

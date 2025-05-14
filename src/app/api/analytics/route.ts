@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
 
 		// Generate service distribution data
 		const serviceTypes = await prisma.service.findMany();
-		
+
 		const serviceDistribution = serviceTypes
 			.map((serviceType) => {
 				const count = queues.filter(
@@ -113,7 +113,9 @@ export async function GET(req: NextRequest) {
 
 		const adminPerformance = admins
 			.map((admin) => {
-				const adminQueues = queues.filter((q) => q.admin && q.admin.id === admin.id);
+				const adminQueues = queues.filter(
+					(q) => q.admin && q.admin.id === admin.id
+				);
 				const completedCount = adminQueues.filter(
 					(q) => q.status === QueueStatus.COMPLETED
 				).length;

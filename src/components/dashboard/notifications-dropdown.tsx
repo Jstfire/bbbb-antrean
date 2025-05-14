@@ -28,14 +28,16 @@ export default function NotificationsDropdown() {
     const [loading, setLoading] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
     const [markingAsRead, setMarkingAsRead] = useState<string | null>(null); // Track which notification is being marked as read
-
-    // Fetch notifications
+    const [dataHash, setDataHash] = useState<string>(""); // Track data hash for change detection    // Fetch notifications
     const fetchNotifications = React.useCallback(async () => {
         if (!session) return;
 
         try {
             setLoading(true);
-            const response = await fetch('/api/notifications', {
+            // Add hash parameter to check for changes
+            const url = `/api/notifications${dataHash ? `?hash=${dataHash}` : ''}`;
+
+            const response = await fetch(url, {
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -44,7 +46,13 @@ export default function NotificationsDropdown() {
 
             if (response.ok) {
                 const data = await response.json();
-                setNotifications(data.notifications);
+
+                // Only update if there are changes or initial load
+                if (!data.hasOwnProperty('hasChanges') || data.hasChanges) {
+                    setNotifications(data.notifications);
+                    // Store the hash for future comparisons
+                    if (data.hash) setDataHash(data.hash);
+                }
             } else {
                 console.error('Failed to fetch notifications');
             }
@@ -53,9 +61,7 @@ export default function NotificationsDropdown() {
         } finally {
             setLoading(false);
         }
-    }, [session]);
-
-    // Mark all notifications as read
+    }, [session, dataHash]);    // Mark all notifications as read
     const markAllAsRead = async () => {
         if (!session) return;
 
@@ -69,7 +75,14 @@ export default function NotificationsDropdown() {
             });
 
             if (response.ok) {
-                setNotifications([]);
+                const data = await response.json();
+                setNotifications(data.notifications || []);
+
+                // Update hash after marking all as read
+                if (data.hash) {
+                    setDataHash(data.hash);
+                }
+
                 toast.success('Semua notifikasi telah dibaca');
             } else {
                 toast.error('Gagal menandai notifikasi sebagai dibaca');
@@ -124,24 +137,54 @@ export default function NotificationsDropdown() {
         if (currentPath !== '/dashboard/queue') {
             router.push('/dashboard/queue');
         }
-    };
-
-    // Refresh notifications when dropdown is opened
+    };    // Refresh notifications when dropdown is opened
     useEffect(() => {
         if (isOpen) {
             fetchNotifications();
         }
-    }, [fetchNotifications, isOpen]);    // Poll for new notifications every 30 seconds
+    }, [fetchNotifications, isOpen]);
+
+    // Setup polling for data changes with change detection
     useEffect(() => {
         if (!session) return;
 
+        // Initial fetch
         fetchNotifications();
 
-        const interval = setInterval(() => {
-            fetchNotifications();
-        }, 30000); // Reduced polling frequency to 30 seconds for better performance
+        // Set up polling for changes
+        const pollInterval = 30000; // Poll every 30 seconds
+        let pollTimer: NodeJS.Timeout | null = null;
 
-        return () => clearInterval(interval);
+        // Function to poll for changes
+        const pollForChanges = () => {
+            if (document.visibilityState === "visible") {
+                fetchNotifications();
+            }
+
+            // Schedule next poll
+            pollTimer = setTimeout(pollForChanges, pollInterval);
+        };
+
+        // Start polling
+        pollTimer = setTimeout(pollForChanges, pollInterval);
+
+        // Track document visibility to pause polling when tab is not visible
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === "visible" && pollTimer === null) {
+                // Resume polling when tab becomes visible again
+                fetchNotifications();
+                pollTimer = setTimeout(pollForChanges, pollInterval);
+            }
+        };
+
+        // Add visibility change listener
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        // Cleanup
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            if (pollTimer) clearTimeout(pollTimer);
+        };
     }, [fetchNotifications, session]);
 
     return (

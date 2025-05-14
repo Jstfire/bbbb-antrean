@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username harus diisi"),
@@ -58,7 +59,11 @@ export default function Home() {
   }
 
   return (
-    <div className="flex justify-center items-center bg-background w-full h-screen">
+    <div className="relative flex justify-center items-center bg-background w-full h-screen">
+      {/* Theme toggle button at top right */}
+      <div className="top-4 right-4 z-10 absolute">
+        <ThemeToggle />
+      </div>
       <div className="px-4 w-full max-w-md">
         <Card className="shadow-lg">
           <CardHeader className="space-y-1 text-center">

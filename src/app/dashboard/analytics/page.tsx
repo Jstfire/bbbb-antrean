@@ -1,17 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
+import { format, startOfToday, startOfWeek, startOfMonth, subMonths } from "date-fns";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 // import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 // import { QueueStatus, Role } from "@/generated/prisma";
-import { BarChart, DownloadIcon, PieChart } from "lucide-react";
+import { BarChart, DownloadIcon, PieChart, RefreshCcw } from "lucide-react";
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell } from "recharts";
-import { format, subMonths, startOfToday, startOfWeek, startOfMonth } from "date-fns";
-// import { id } from "date-fns/locale";
 
 interface AnalyticsData {
     summary: {
@@ -41,37 +40,41 @@ interface AnalyticsData {
         completed: number;
         canceled: number;
     }[];
+    trackLastUpdated?: string; // Last updated time from track queue
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82ca9d', '#ffc658'];
 
 export default function AnalyticsPage() {
-    const { data: session } = useSession();
+    const { data: session } = useSession({
+        required: false,
+        onUnauthenticated() {
+            // Handle unauthenticated users
+        }
+    });
     const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
     const [loading, setLoading] = useState(true);
     const [timeRange, setTimeRange] = useState<string>("today");
-    const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+    const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+    const [dataHash, setDataHash] = useState<string>(""); // Tambahkan state untuk hash data
+    const [visibilityState, setVisibilityState] = useState<string>("visible"); // Track browser tab visibility
 
-    useEffect(() => {
-        if (session) {
-            fetchAnalyticsData(timeRange);
+    const fetchAnalyticsData = useCallback(async (currentRange: string) => {
+        if (!session) {
+            setLoading(false);
+            return;
         }
-    }, [session, timeRange]);
-
-    const fetchAnalyticsData = async (range: string) => {
+        setLoading(true);
         try {
-            setLoading(true);
-
-            // Calculate date range based on selection
             let startDate;
             const today = new Date();
 
-            switch (range) {
+            switch (currentRange) {
                 case "today":
                     startDate = startOfToday();
                     break;
                 case "week":
-                    startDate = startOfWeek(today, { weekStartsOn: 1 }); // Week starts on Monday
+                    startDate = startOfWeek(today, { weekStartsOn: 1 });
                     break;
                 case "month":
                     startDate = startOfMonth(today);
@@ -84,23 +87,127 @@ export default function AnalyticsPage() {
             }
 
             const formattedStartDate = format(startDate, "yyyy-MM-dd");
-
-            const response = await fetch(`/api/analytics?startDate=${formattedStartDate}`);
+            // Tambahkan parameter hash untuk mendukung pengecekan perubahan data
+            const url = `${dataHash ? `&hash=${dataHash}` : ''}`;
+            const response = await fetch(`/api/analytics?startDate=${formattedStartDate}${url}`);
 
             if (response.ok) {
                 const data = await response.json();
-                setAnalyticsData(data);
-                setLastUpdated(new Date());
+
+                // Cek apakah data berubah (jika API mendukung fitur ini)
+                if (!data.hasOwnProperty('hasChanges') || data.hasChanges) {
+                    setAnalyticsData(data);
+                    if (data.hash) setDataHash(data.hash);
+
+                    // Gunakan timestamp dari server jika tersedia
+                    if (data.dataLastUpdatedAt) {
+                        setLastUpdated(new Date(data.dataLastUpdatedAt));
+                    } else {
+                        setLastUpdated(new Date());
+                    }
+                }
             } else {
                 toast.error("Gagal memuat data analitik");
+                setAnalyticsData(null); // Clear data on error
             }
         } catch (error) {
             console.error("Error fetching analytics data:", error);
             toast.error("Terjadi kesalahan saat memuat data analitik");
+            setAnalyticsData(null); // Clear data on error
         } finally {
             setLoading(false);
         }
-    };
+    }, [session, dataHash]); // Tambahkan dataHash sebagai dependency    // Initial load saat component mount atau timeRange berubah
+    useEffect(() => {
+        if (session) {
+            fetchAnalyticsData(timeRange);
+        } else {
+            // No session, clear data and reset loading state
+            setAnalyticsData(null);
+            setLastUpdated(null);
+            setLoading(false);
+        }
+    }, [session, timeRange, fetchAnalyticsData]);
+
+    // Setup document visibility listener to avoid refreshing when tab is hidden/inactive
+    useEffect(() => {
+        // Track if the document is visible or hidden
+        const handleVisibilityChange = () => {
+            setVisibilityState(document.visibilityState);
+        };
+
+        // Add visibility change listener
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        // Set initial state
+        setVisibilityState(document.visibilityState);
+
+        // Cleanup
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, []);
+
+    // Setup polling for data changes instead of continuous refresh
+    useEffect(() => {
+        if (!session) return;
+
+        // Flag to track if this component is still mounted
+        let isMounted = true;
+        // Use polling instead of SSE for more reliable experience
+        const pollInterval = 60000; // Poll every 60 seconds (adjust as needed)
+        let pollTimer: NodeJS.Timeout | null = null;        // Function to poll for changes
+        const pollForChanges = async () => {
+            if (!isMounted || visibilityState !== "visible") return;
+
+            try {
+                // Use existing dataHash to check for changes
+                const startDate = format(
+                    timeRange === "today" ? startOfToday() :
+                        timeRange === "week" ? startOfWeek(new Date(), { weekStartsOn: 1 }) :
+                            timeRange === "month" ? startOfMonth(new Date()) :
+                                timeRange === "3months" ? subMonths(new Date(), 3) :
+                                    startOfToday(),
+                    "yyyy-MM-dd"
+                );
+
+                const url = `/api/analytics?startDate=${startDate}${dataHash ? `&hash=${dataHash}` : ''}`;
+                const response = await fetch(url);
+
+                if (response.ok && isMounted) {
+                    const data = await response.json();
+
+                    // Only update if there are changes
+                    if (!data.hasOwnProperty('hasChanges') || data.hasChanges) {
+                        console.log('Perubahan data analitik terdeteksi melalui polling');
+                        setAnalyticsData(data);
+                        if (data.hash) setDataHash(data.hash);
+
+                        // Update timestamp using server time if available, or current time
+                        if (data.dataLastUpdatedAt) {
+                            setLastUpdated(new Date(data.dataLastUpdatedAt));
+                        } else {
+                            setLastUpdated(new Date());
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error polling for analytics data:', error);
+            }
+
+            // Schedule next poll if component is still mounted
+            if (isMounted) {
+                pollTimer = setTimeout(pollForChanges, pollInterval);
+            }
+        };
+
+        // Initial poll
+        pollForChanges();        // Cleanup function
+        return () => {
+            isMounted = false;
+            if (pollTimer) clearTimeout(pollTimer);
+        };
+    }, [session, timeRange, dataHash, fetchAnalyticsData, visibilityState]);
 
     const handleExportData = async (exportFormat: string) => {
         try {
@@ -156,7 +263,7 @@ export default function AnalyticsPage() {
                 <div>
                     <h1 className="font-bold text-2xl">Analitik Antrean</h1>
                     <p className="text-muted-foreground">
-                        Visualisasi dan laporan antrean PST
+                        Visualisasi dan laporan antrean PST {/* PST is maintained as per original */}
                     </p>
                 </div>
 
@@ -184,10 +291,24 @@ export default function AnalyticsPage() {
                         </Button>
                     </div>
                 </div>
-            </div>
-
-            <div className="text-muted-foreground text-sm">
-                Data terakhir diperbarui: {lastUpdated.toLocaleString("id-ID")}
+            </div>            <div className="flex justify-between items-center">
+                <div className="text-muted-foreground text-sm">
+                    Data terakhir diperbarui: {lastUpdated ? lastUpdated.toLocaleString("id-ID", { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : (loading && !analyticsData ? "Memuat data awal..." : "Belum ada data")}
+                    {analyticsData?.trackLastUpdated && (
+                        <div className="mt-1">
+                            Data antrean track terakhir: {new Date(analyticsData.trackLastUpdated).toLocaleString("id-ID", { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        </div>
+                    )}
+                </div>
+                <Button
+                    onClick={() => fetchAnalyticsData(timeRange)} // Ensure this calls the new fetchStats
+                    disabled={loading}
+                    className="flex items-center gap-2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--primary-foreground)] transition-colors duration-200"
+                    aria-label="Perbarui data statistik"
+                >
+                    <RefreshCcw className="w-4 h-4" />
+                    <span>Perbarui Data</span>
+                </Button>
             </div>
 
             {loading ? (
