@@ -97,6 +97,29 @@ export async function GET(req: NextRequest) {
 			})
 			.filter((item) => item.count > 0);
 
+		// Generate queue type distribution data
+		const onlineCount = queues.filter((q) => q.queueType === "ONLINE").length;
+		const offlineCount = queues.filter((q) => q.queueType === "OFFLINE").length;
+
+		const queueTypeDistribution = [
+			{
+				name: "Online",
+				count: onlineCount,
+				percentage:
+					totalVisitors > 0
+						? Math.round((onlineCount / totalVisitors) * 100)
+						: 0,
+			},
+			{
+				name: "Offline",
+				count: offlineCount,
+				percentage:
+					totalVisitors > 0
+						? Math.round((offlineCount / totalVisitors) * 100)
+						: 0,
+			},
+		].filter((item) => item.count > 0);
+
 		// Generate admin performance data
 		const admins = await prisma.user.findMany({
 			where: {
@@ -201,7 +224,6 @@ export async function GET(req: NextRequest) {
 		const dailyTrends = Array.from(dailyMap.values()).sort((a, b) => {
 			return new Date(a.date).getTime() - new Date(b.date).getTime();
 		});
-
 		return NextResponse.json({
 			summary: {
 				totalVisitors,
@@ -211,6 +233,7 @@ export async function GET(req: NextRequest) {
 				averageServiceTimeMinutes,
 			},
 			serviceDistribution,
+			queueTypeDistribution,
 			adminPerformance,
 			timeAnalysis: filteredTimeAnalysis,
 			dailyTrends,

@@ -49,7 +49,7 @@
   --foreground: #2D2D2D; /* Text primary color for main content */
   --card: #FFE5D3; /* Card background = surface color */
   --card-foreground: #2D2D2D; /* Text on cards */
-  --popover: #FFE5D3; /* Popover background = surface color */
+  --popover: #FFF4EC; /* Popover background = surface color */
   --popover-foreground: #2D2D2D; /* Text on popovers */
   --primary: #F79039; /* Primary orange */
   --primary-hover: #e67620; /* Hover state for primary buttons */

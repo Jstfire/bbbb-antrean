@@ -43,11 +43,10 @@ export async function POST(
 				{ status: 400 }
 			);
 		}
-
 		// Verify that the admin user exists in the database
 		const adminUser = await prisma.user.findUnique({
 			where: { id: session.user.id },
-			select: { id: true },
+			select: { id: true, name: true },
 		});
 
 		if (!adminUser) {
@@ -57,6 +56,12 @@ export async function POST(
 				{ status: 404 }
 			);
 		}
+		// Format queue date to DDMM format
+		const formatQueueDate = (date: Date): string => {
+			const day = date.getDate().toString().padStart(2, "0");
+			const month = (date.getMonth() + 1).toString().padStart(2, "0");
+			return `${day}${month}`;
+		};
 
 		// Update queue to serving status
 		const updatedQueue = await prisma.queue.update({
@@ -77,6 +82,20 @@ export async function POST(
 						name: true,
 					},
 				},
+			},
+		});
+
+		// Create notification for queue being served
+		await prisma.notification.create({
+			data: {
+				type: "QUEUE_SERVING",
+				title: "Antrean Sedang Dilayani",
+				message: `Antrean #${updatedQueue.queueNumber}-${formatQueueDate(
+					new Date(updatedQueue.createdAt)
+				)} (${
+					updatedQueue.queueType === "ONLINE" ? "Online" : "Offline"
+				}) sedang dilayani oleh ${adminUser.name}`,
+				isRead: false,
 			},
 		});
 

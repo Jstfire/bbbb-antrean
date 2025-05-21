@@ -27,9 +27,9 @@ import {
     Select,
     SelectContent,
     SelectItem,
-    SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { SelectTrigger } from "@/app/visitor-form/visitor-form-select";
 import { ServiceStatus } from "@/generated/prisma";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -61,6 +61,7 @@ interface QueueTrackingInfo {
     startTime: string | null;
     endTime: string | null;
     filledSKD: boolean;
+    queueType: string; // Added queue type
 }
 
 const visitorFormSchema = z.object({
@@ -73,6 +74,9 @@ const visitorFormSchema = z.object({
         .optional()
         .or(z.literal("")),
     serviceId: z.string().min(1, "Layanan harus dipilih"),
+    queueType: z.enum(["ONLINE", "OFFLINE"], {
+        required_error: "Tipe antrean harus dipilih",
+    }),
 });
 
 type VisitorFormValues = z.infer<typeof visitorFormSchema>;
@@ -86,11 +90,12 @@ export default function VisitorFormPage({
     const [isValid, setIsValid] = useState(true);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [isTracking, setIsTracking] = useState(false);
-    const [services, setServices] = useState<Service[]>([]);
-    const [queueInfo, setQueueInfo] = useState<{
+    const [services, setServices] = useState<Service[]>([]); const [queueInfo, setQueueInfo] = useState<{
         queueNumber: number;
         serviceName: string;
         visitorName: string;
+        createdAt?: string;
+        queueType?: string;
         redirectUrl?: string;
     } | null>(null);
     const [trackingInfo, setTrackingInfo] = useState<QueueTrackingInfo | null>(
@@ -105,9 +110,16 @@ export default function VisitorFormPage({
     // Get the UUID from params
     const { uuid } = use(params);
 
-    // Get search params to check for direct form flag
-    // const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
+    // Get search params to check for direct form flag    // const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
     // const shouldShowForm = searchParams.get('directToForm') === 'true';
+
+    // Format queue time to DDMM format (eg. 1405 for May 14)
+    const formatQueueTime = (isoDateString: string): string => {
+        const date = new Date(isoDateString);
+        const day = date.getDate().toString().padStart(2, "0");
+        const month = (date.getMonth() + 1).toString().padStart(2, "0"); // Month is 0-indexed, so add 1
+        return `${day}${month}`;
+    };
 
     const form = useForm<VisitorFormValues>({
         resolver: zodResolver(visitorFormSchema),
@@ -117,6 +129,7 @@ export default function VisitorFormPage({
             institution: "",
             email: "",
             serviceId: "",
+            queueType: "OFFLINE", // Default to offline
         },
     }); // Function to check tracking status
     const checkTrackingStatus = useCallback(
@@ -433,27 +446,38 @@ export default function VisitorFormPage({
                             BPS Kabupaten Buton Selatan
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="flex flex-col justify-center items-center space-y-2">
-                            <p className="font-bold text-accent text-4xl">
-                                {trackingInfo.queueNumber}
-                            </p>
-                            <p className="text-lg">Nomor Antrean Anda</p>
+                    <CardContent className="space-y-6">                        <div className="flex flex-col justify-center items-center space-y-2">                            <p className="font-bold text-accent text-4xl">
+                        {trackingInfo.queueNumber}-{formatQueueTime(trackingInfo.createdAt)}
+                    </p>
+                        <p className="text-lg">Nomor Antrean Anda</p>
+                        <div className="flex items-center gap-2">
                             {getQueueStatusBadge(trackingInfo.status)}
+                            <Badge
+                                variant="outline"
+                                className={`${trackingInfo.queueType === "ONLINE"
+                                    ? "bg-blue-100 text-blue-800"
+                                    : "bg-green-100 text-green-800"
+                                    }`}
+                            >
+                                {trackingInfo.queueType === "ONLINE" ? "Online" : "Offline"}
+                            </Badge>
                         </div>
+                    </div>
 
-                        <div className="space-y-3">
-                            <div className="bg-muted p-3 rounded-md">
-                                <p className="mb-1 font-semibold text-sm">
-                                    Informasi Pengunjung
-                                </p>
-                                <p className="text-muted-foreground text-sm">
-                                    Nama: {trackingInfo.visitorName}
-                                </p>
-                                <p className="text-muted-foreground text-sm">
-                                    Layanan: {trackingInfo.serviceName}
-                                </p>
-                            </div>
+                        <div className="space-y-3">                            <div className="bg-muted p-3 rounded-md">
+                            <p className="mb-1 font-semibold text-sm">
+                                Informasi Pengunjung
+                            </p>
+                            <p className="text-muted-foreground text-sm">
+                                Nama: {trackingInfo.visitorName}
+                            </p>
+                            <p className="text-muted-foreground text-sm">
+                                Layanan: {trackingInfo.serviceName}
+                            </p>
+                            <p className="text-muted-foreground text-sm">
+                                Tipe Antrean: {trackingInfo.queueType === "ONLINE" ? "Online" : "Offline"}
+                            </p>
+                        </div>
                             {trackingInfo.status === "WAITING" && (
                                 <div className="flex items-start space-x-3 bg-yellow-50 p-3 rounded-md">
                                     <Clock className="mt-0.5 w-5 h-5 text-yellow-500" />
@@ -609,13 +633,23 @@ export default function VisitorFormPage({
                             Terima kasih telah mengisi formulir
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex flex-col justify-center items-center space-y-1">
-                            <p className="font-bold text-accent text-3xl">
-                                {queueInfo.queueNumber}
-                            </p>
-                            <p className="text-xl">Nomor Antrean Anda</p>
-                        </div>
+                    <CardContent className="space-y-4">                        <div className="flex flex-col justify-center items-center space-y-1">
+                        <p className="font-bold text-accent text-3xl">
+                            {queueInfo.queueNumber}-{formatQueueTime(queueInfo.createdAt || new Date().toISOString())}
+                        </p>
+                        <p className="text-xl">Nomor Antrean Anda</p>
+                        {queueInfo.queueType && (
+                            <Badge
+                                variant="outline"
+                                className={`${queueInfo.queueType === "ONLINE"
+                                    ? "bg-blue-100 text-blue-800"
+                                    : "bg-green-100 text-green-800"
+                                    }`}
+                            >
+                                {queueInfo.queueType === "ONLINE" ? "Online" : "Offline"}
+                            </Badge>
+                        )}
+                    </div>
                         <div className="space-y-2">
                             <p className="text-muted-foreground text-sm">
                                 Nama: {queueInfo.visitorName}
@@ -739,9 +773,8 @@ export default function VisitorFormPage({
                                             <Select
                                                 onValueChange={field.onChange}
                                                 defaultValue={field.value}
-                                            >
-                                                <FormControl>
-                                                    <SelectTrigger>
+                                            >                                                <FormControl>
+                                                    <SelectTrigger className="bg-sidebar w-full">
                                                         <SelectValue placeholder="Pilih layanan" />
                                                     </SelectTrigger>
                                                 </FormControl>
@@ -751,6 +784,29 @@ export default function VisitorFormPage({
                                                             {service.name}
                                                         </SelectItem>
                                                     ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="queueType"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Tipe Antrean</FormLabel>
+                                            <Select
+                                                onValueChange={field.onChange}
+                                                defaultValue={field.value}
+                                            >                                                <FormControl>
+                                                    <SelectTrigger className="bg-sidebar w-full">
+                                                        <SelectValue placeholder="Pilih tipe antrean" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="OFFLINE">Offline (Di Lokasi PST)</SelectItem>
+                                                    <SelectItem value="ONLINE">Online (Daring)</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />
@@ -790,3 +846,4 @@ export default function VisitorFormPage({
         </div>
     );
 }
+

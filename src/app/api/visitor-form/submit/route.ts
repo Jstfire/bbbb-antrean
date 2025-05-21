@@ -1,4 +1,4 @@
-import { PrismaClient, QueueStatus } from "@/generated/prisma";
+import { PrismaClient, QueueStatus, QueueType } from "@/generated/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 
@@ -7,10 +7,11 @@ const prisma = new PrismaClient();
 export async function POST(req: NextRequest) {
 	try {
 		const data = await req.json();
-		const { name, phone, institution, email, serviceId, tempUuid } = data;
+		const { name, phone, institution, email, serviceId, tempUuid, queueType } =
+			data;
 
 		// Validate required fields
-		if (!name || !phone || !serviceId || !tempUuid) {
+		if (!name || !phone || !serviceId || !tempUuid || !queueType) {
 			return NextResponse.json(
 				{ error: "Missing required fields" },
 				{ status: 400 }
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
 
 		// If it's a new day, start from 1, otherwise increment from the last queue number
 		const nextQueueNumber = latestQueue ? latestQueue.queueNumber + 1 : 1;
-		
+
 		// Transaction to create visitor and queue
 		const result = await prisma.$transaction(async (tx) => {
 			// Create visitor
@@ -72,13 +73,13 @@ export async function POST(req: NextRequest) {
 			});
 
 			// Generate a tracking link
-			const trackingLink = `${nanoid(10)}`;
-
-			// Create queue
+			const trackingLink = `${nanoid(10)}`; // Create queue
 			const queue = await tx.queue.create({
 				data: {
 					queueNumber: nextQueueNumber,
 					status: QueueStatus.WAITING,
+					queueType:
+						queueType === "ONLINE" ? QueueType.ONLINE : QueueType.OFFLINE,
 					visitorId: visitor.id,
 					serviceId,
 					tempUuid: tempUuid,
@@ -94,14 +95,21 @@ export async function POST(req: NextRequest) {
 			await tx.tempVisitorLink.update({
 				where: { uuid: tempUuid },
 				data: { used: true },
-			});
-
-			// Create notification for staff
+			}); // Format queue date to DDMM format
+			
+			const formatQueueDate = (date: Date): string => {
+				const day = date.getDate().toString().padStart(2, "0");
+				const month = (date.getMonth() + 1).toString().padStart(2, "0");
+				return `${day}${month}`;
+			}; // Create notification for staff
 			await tx.notification.create({
 				data: {
 					type: "NEW_QUEUE",
 					title: "Antrean Baru",
-					message: `Antrean baru #${queue.queueNumber} dari ${visitor.name} untuk layanan ${queue.service.name}`,
+					message: `Antrean baru #${queue.queueNumber}-${formatQueueDate(
+						new Date(queue.createdAt)
+					)} (${queue.queueType === "ONLINE" ? "Online" : "Offline"}) dari ${visitor.name
+						} untuk layanan ${queue.service.name}`,
 					isRead: false,
 				},
 			});
@@ -115,6 +123,8 @@ export async function POST(req: NextRequest) {
 				queueNumber: result.queue.queueNumber,
 				serviceName: result.queue.service.name,
 				visitorName: result.visitor.name,
+				createdAt: result.queue.createdAt,
+				queueType: result.queue.queueType,
 				redirectUrl: `/visitor-form/${tempUuid}`,
 			},
 		});

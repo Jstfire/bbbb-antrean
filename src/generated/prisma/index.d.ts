@@ -78,6 +78,14 @@ export const ServiceStatus: {
 
 export type ServiceStatus = (typeof ServiceStatus)[keyof typeof ServiceStatus]
 
+
+export const QueueType: {
+  ONLINE: 'ONLINE',
+  OFFLINE: 'OFFLINE'
+};
+
+export type QueueType = (typeof QueueType)[keyof typeof QueueType]
+
 }
 
 export type Role = $Enums.Role
@@ -91,6 +99,10 @@ export const QueueStatus: typeof $Enums.QueueStatus
 export type ServiceStatus = $Enums.ServiceStatus
 
 export const ServiceStatus: typeof $Enums.ServiceStatus
+
+export type QueueType = $Enums.QueueType
+
+export const QueueType: typeof $Enums.QueueType
 
 /**
  * ##  Prisma Client ʲˢ
@@ -4873,6 +4885,7 @@ export namespace Prisma {
     id: string | null
     queueNumber: number | null
     status: $Enums.QueueStatus | null
+    queueType: $Enums.QueueType | null
     visitorId: string | null
     serviceId: string | null
     adminId: string | null
@@ -4889,6 +4902,7 @@ export namespace Prisma {
     id: string | null
     queueNumber: number | null
     status: $Enums.QueueStatus | null
+    queueType: $Enums.QueueType | null
     visitorId: string | null
     serviceId: string | null
     adminId: string | null
@@ -4905,6 +4919,7 @@ export namespace Prisma {
     id: number
     queueNumber: number
     status: number
+    queueType: number
     visitorId: number
     serviceId: number
     adminId: number
@@ -4931,6 +4946,7 @@ export namespace Prisma {
     id?: true
     queueNumber?: true
     status?: true
+    queueType?: true
     visitorId?: true
     serviceId?: true
     adminId?: true
@@ -4947,6 +4963,7 @@ export namespace Prisma {
     id?: true
     queueNumber?: true
     status?: true
+    queueType?: true
     visitorId?: true
     serviceId?: true
     adminId?: true
@@ -4963,6 +4980,7 @@ export namespace Prisma {
     id?: true
     queueNumber?: true
     status?: true
+    queueType?: true
     visitorId?: true
     serviceId?: true
     adminId?: true
@@ -5066,6 +5084,7 @@ export namespace Prisma {
     id: string
     queueNumber: number
     status: $Enums.QueueStatus
+    queueType: $Enums.QueueType
     visitorId: string
     serviceId: string
     adminId: string | null
@@ -5101,6 +5120,7 @@ export namespace Prisma {
     id?: boolean
     queueNumber?: boolean
     status?: boolean
+    queueType?: boolean
     visitorId?: boolean
     serviceId?: boolean
     adminId?: boolean
@@ -5120,6 +5140,7 @@ export namespace Prisma {
     id?: boolean
     queueNumber?: boolean
     status?: boolean
+    queueType?: boolean
     visitorId?: boolean
     serviceId?: boolean
     adminId?: boolean
@@ -5139,6 +5160,7 @@ export namespace Prisma {
     id?: boolean
     queueNumber?: boolean
     status?: boolean
+    queueType?: boolean
     visitorId?: boolean
     serviceId?: boolean
     adminId?: boolean
@@ -5158,6 +5180,7 @@ export namespace Prisma {
     id?: boolean
     queueNumber?: boolean
     status?: boolean
+    queueType?: boolean
     visitorId?: boolean
     serviceId?: boolean
     adminId?: boolean
@@ -5170,7 +5193,7 @@ export namespace Prisma {
     trackingLink?: boolean
   }
 
-  export type QueueOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "queueNumber" | "status" | "visitorId" | "serviceId" | "adminId" | "startTime" | "endTime" | "createdAt" | "updatedAt" | "tempUuid" | "filledSKD" | "trackingLink", ExtArgs["result"]["queue"]>
+  export type QueueOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "queueNumber" | "status" | "queueType" | "visitorId" | "serviceId" | "adminId" | "startTime" | "endTime" | "createdAt" | "updatedAt" | "tempUuid" | "filledSKD" | "trackingLink", ExtArgs["result"]["queue"]>
   export type QueueInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     visitor?: boolean | VisitorDefaultArgs<ExtArgs>
     service?: boolean | ServiceDefaultArgs<ExtArgs>
@@ -5198,6 +5221,7 @@ export namespace Prisma {
       id: string
       queueNumber: number
       status: $Enums.QueueStatus
+      queueType: $Enums.QueueType
       visitorId: string
       serviceId: string
       adminId: string | null
@@ -5637,6 +5661,7 @@ export namespace Prisma {
     readonly id: FieldRef<"Queue", 'String'>
     readonly queueNumber: FieldRef<"Queue", 'Int'>
     readonly status: FieldRef<"Queue", 'QueueStatus'>
+    readonly queueType: FieldRef<"Queue", 'QueueType'>
     readonly visitorId: FieldRef<"Queue", 'String'>
     readonly serviceId: FieldRef<"Queue", 'String'>
     readonly adminId: FieldRef<"Queue", 'String'>
@@ -9254,6 +9279,7 @@ export namespace Prisma {
     id: 'id',
     queueNumber: 'queueNumber',
     status: 'status',
+    queueType: 'queueType',
     visitorId: 'visitorId',
     serviceId: 'serviceId',
     adminId: 'adminId',
@@ -9416,6 +9442,20 @@ export namespace Prisma {
    * Reference to a field of type 'QueueStatus[]'
    */
   export type ListEnumQueueStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueueStatus[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'QueueType'
+   */
+  export type EnumQueueTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueueType'>
+    
+
+
+  /**
+   * Reference to a field of type 'QueueType[]'
+   */
+  export type ListEnumQueueTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueueType[]'>
     
 
 
@@ -9638,6 +9678,7 @@ export namespace Prisma {
     id?: StringFilter<"Queue"> | string
     queueNumber?: IntFilter<"Queue"> | number
     status?: EnumQueueStatusFilter<"Queue"> | $Enums.QueueStatus
+    queueType?: EnumQueueTypeFilter<"Queue"> | $Enums.QueueType
     visitorId?: StringFilter<"Queue"> | string
     serviceId?: StringFilter<"Queue"> | string
     adminId?: StringNullableFilter<"Queue"> | string | null
@@ -9657,6 +9698,7 @@ export namespace Prisma {
     id?: SortOrder
     queueNumber?: SortOrder
     status?: SortOrder
+    queueType?: SortOrder
     visitorId?: SortOrder
     serviceId?: SortOrder
     adminId?: SortOrderInput | SortOrder
@@ -9681,6 +9723,7 @@ export namespace Prisma {
     NOT?: QueueWhereInput | QueueWhereInput[]
     queueNumber?: IntFilter<"Queue"> | number
     status?: EnumQueueStatusFilter<"Queue"> | $Enums.QueueStatus
+    queueType?: EnumQueueTypeFilter<"Queue"> | $Enums.QueueType
     visitorId?: StringFilter<"Queue"> | string
     serviceId?: StringFilter<"Queue"> | string
     adminId?: StringNullableFilter<"Queue"> | string | null
@@ -9698,6 +9741,7 @@ export namespace Prisma {
     id?: SortOrder
     queueNumber?: SortOrder
     status?: SortOrder
+    queueType?: SortOrder
     visitorId?: SortOrder
     serviceId?: SortOrder
     adminId?: SortOrderInput | SortOrder
@@ -9722,6 +9766,7 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"Queue"> | string
     queueNumber?: IntWithAggregatesFilter<"Queue"> | number
     status?: EnumQueueStatusWithAggregatesFilter<"Queue"> | $Enums.QueueStatus
+    queueType?: EnumQueueTypeWithAggregatesFilter<"Queue"> | $Enums.QueueType
     visitorId?: StringWithAggregatesFilter<"Queue"> | string
     serviceId?: StringWithAggregatesFilter<"Queue"> | string
     adminId?: StringNullableWithAggregatesFilter<"Queue"> | string | null
@@ -10129,6 +10174,7 @@ export namespace Prisma {
     id?: string
     queueNumber: number
     status?: $Enums.QueueStatus
+    queueType?: $Enums.QueueType
     startTime?: Date | string | null
     endTime?: Date | string | null
     createdAt?: Date | string
@@ -10145,6 +10191,7 @@ export namespace Prisma {
     id?: string
     queueNumber: number
     status?: $Enums.QueueStatus
+    queueType?: $Enums.QueueType
     visitorId: string
     serviceId: string
     adminId?: string | null
@@ -10161,6 +10208,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     queueNumber?: IntFieldUpdateOperationsInput | number
     status?: EnumQueueStatusFieldUpdateOperationsInput | $Enums.QueueStatus
+    queueType?: EnumQueueTypeFieldUpdateOperationsInput | $Enums.QueueType
     startTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -10177,6 +10225,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     queueNumber?: IntFieldUpdateOperationsInput | number
     status?: EnumQueueStatusFieldUpdateOperationsInput | $Enums.QueueStatus
+    queueType?: EnumQueueTypeFieldUpdateOperationsInput | $Enums.QueueType
     visitorId?: StringFieldUpdateOperationsInput | string
     serviceId?: StringFieldUpdateOperationsInput | string
     adminId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -10193,6 +10242,7 @@ export namespace Prisma {
     id?: string
     queueNumber: number
     status?: $Enums.QueueStatus
+    queueType?: $Enums.QueueType
     visitorId: string
     serviceId: string
     adminId?: string | null
@@ -10209,6 +10259,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     queueNumber?: IntFieldUpdateOperationsInput | number
     status?: EnumQueueStatusFieldUpdateOperationsInput | $Enums.QueueStatus
+    queueType?: EnumQueueTypeFieldUpdateOperationsInput | $Enums.QueueType
     startTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -10222,6 +10273,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     queueNumber?: IntFieldUpdateOperationsInput | number
     status?: EnumQueueStatusFieldUpdateOperationsInput | $Enums.QueueStatus
+    queueType?: EnumQueueTypeFieldUpdateOperationsInput | $Enums.QueueType
     visitorId?: StringFieldUpdateOperationsInput | string
     serviceId?: StringFieldUpdateOperationsInput | string
     adminId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -10681,6 +10733,13 @@ export namespace Prisma {
     not?: NestedEnumQueueStatusFilter<$PrismaModel> | $Enums.QueueStatus
   }
 
+  export type EnumQueueTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.QueueType | EnumQueueTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.QueueType[] | ListEnumQueueTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.QueueType[] | ListEnumQueueTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumQueueTypeFilter<$PrismaModel> | $Enums.QueueType
+  }
+
   export type DateTimeNullableFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
@@ -10716,6 +10775,7 @@ export namespace Prisma {
     id?: SortOrder
     queueNumber?: SortOrder
     status?: SortOrder
+    queueType?: SortOrder
     visitorId?: SortOrder
     serviceId?: SortOrder
     adminId?: SortOrder
@@ -10736,6 +10796,7 @@ export namespace Prisma {
     id?: SortOrder
     queueNumber?: SortOrder
     status?: SortOrder
+    queueType?: SortOrder
     visitorId?: SortOrder
     serviceId?: SortOrder
     adminId?: SortOrder
@@ -10752,6 +10813,7 @@ export namespace Prisma {
     id?: SortOrder
     queueNumber?: SortOrder
     status?: SortOrder
+    queueType?: SortOrder
     visitorId?: SortOrder
     serviceId?: SortOrder
     adminId?: SortOrder
@@ -10792,6 +10854,16 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumQueueStatusFilter<$PrismaModel>
     _max?: NestedEnumQueueStatusFilter<$PrismaModel>
+  }
+
+  export type EnumQueueTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.QueueType | EnumQueueTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.QueueType[] | ListEnumQueueTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.QueueType[] | ListEnumQueueTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumQueueTypeWithAggregatesFilter<$PrismaModel> | $Enums.QueueType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumQueueTypeFilter<$PrismaModel>
+    _max?: NestedEnumQueueTypeFilter<$PrismaModel>
   }
 
   export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -11118,6 +11190,10 @@ export namespace Prisma {
     set?: $Enums.QueueStatus
   }
 
+  export type EnumQueueTypeFieldUpdateOperationsInput = {
+    set?: $Enums.QueueType
+  }
+
   export type NullableDateTimeFieldUpdateOperationsInput = {
     set?: Date | string | null
   }
@@ -11318,6 +11394,13 @@ export namespace Prisma {
     not?: NestedEnumQueueStatusFilter<$PrismaModel> | $Enums.QueueStatus
   }
 
+  export type NestedEnumQueueTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.QueueType | EnumQueueTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.QueueType[] | ListEnumQueueTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.QueueType[] | ListEnumQueueTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumQueueTypeFilter<$PrismaModel> | $Enums.QueueType
+  }
+
   export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
@@ -11371,6 +11454,16 @@ export namespace Prisma {
     _max?: NestedEnumQueueStatusFilter<$PrismaModel>
   }
 
+  export type NestedEnumQueueTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.QueueType | EnumQueueTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.QueueType[] | ListEnumQueueTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.QueueType[] | ListEnumQueueTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumQueueTypeWithAggregatesFilter<$PrismaModel> | $Enums.QueueType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumQueueTypeFilter<$PrismaModel>
+    _max?: NestedEnumQueueTypeFilter<$PrismaModel>
+  }
+
   export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
@@ -11397,6 +11490,7 @@ export namespace Prisma {
     id?: string
     queueNumber: number
     status?: $Enums.QueueStatus
+    queueType?: $Enums.QueueType
     startTime?: Date | string | null
     endTime?: Date | string | null
     createdAt?: Date | string
@@ -11412,6 +11506,7 @@ export namespace Prisma {
     id?: string
     queueNumber: number
     status?: $Enums.QueueStatus
+    queueType?: $Enums.QueueType
     visitorId: string
     serviceId: string
     startTime?: Date | string | null
@@ -11486,6 +11581,7 @@ export namespace Prisma {
     id?: StringFilter<"Queue"> | string
     queueNumber?: IntFilter<"Queue"> | number
     status?: EnumQueueStatusFilter<"Queue"> | $Enums.QueueStatus
+    queueType?: EnumQueueTypeFilter<"Queue"> | $Enums.QueueType
     visitorId?: StringFilter<"Queue"> | string
     serviceId?: StringFilter<"Queue"> | string
     adminId?: StringNullableFilter<"Queue"> | string | null
@@ -11532,6 +11628,7 @@ export namespace Prisma {
     id?: string
     queueNumber: number
     status?: $Enums.QueueStatus
+    queueType?: $Enums.QueueType
     startTime?: Date | string | null
     endTime?: Date | string | null
     createdAt?: Date | string
@@ -11547,6 +11644,7 @@ export namespace Prisma {
     id?: string
     queueNumber: number
     status?: $Enums.QueueStatus
+    queueType?: $Enums.QueueType
     visitorId: string
     adminId?: string | null
     startTime?: Date | string | null
@@ -11588,6 +11686,7 @@ export namespace Prisma {
     id?: string
     queueNumber: number
     status?: $Enums.QueueStatus
+    queueType?: $Enums.QueueType
     startTime?: Date | string | null
     endTime?: Date | string | null
     createdAt?: Date | string
@@ -11603,6 +11702,7 @@ export namespace Prisma {
     id?: string
     queueNumber: number
     status?: $Enums.QueueStatus
+    queueType?: $Enums.QueueType
     serviceId: string
     adminId?: string | null
     startTime?: Date | string | null
@@ -11868,6 +11968,7 @@ export namespace Prisma {
     id?: string
     queueNumber: number
     status?: $Enums.QueueStatus
+    queueType?: $Enums.QueueType
     visitorId: string
     serviceId: string
     startTime?: Date | string | null
@@ -11893,6 +11994,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     queueNumber?: IntFieldUpdateOperationsInput | number
     status?: EnumQueueStatusFieldUpdateOperationsInput | $Enums.QueueStatus
+    queueType?: EnumQueueTypeFieldUpdateOperationsInput | $Enums.QueueType
     startTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -11908,6 +12010,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     queueNumber?: IntFieldUpdateOperationsInput | number
     status?: EnumQueueStatusFieldUpdateOperationsInput | $Enums.QueueStatus
+    queueType?: EnumQueueTypeFieldUpdateOperationsInput | $Enums.QueueType
     visitorId?: StringFieldUpdateOperationsInput | string
     serviceId?: StringFieldUpdateOperationsInput | string
     startTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -11923,6 +12026,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     queueNumber?: IntFieldUpdateOperationsInput | number
     status?: EnumQueueStatusFieldUpdateOperationsInput | $Enums.QueueStatus
+    queueType?: EnumQueueTypeFieldUpdateOperationsInput | $Enums.QueueType
     visitorId?: StringFieldUpdateOperationsInput | string
     serviceId?: StringFieldUpdateOperationsInput | string
     startTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -11968,6 +12072,7 @@ export namespace Prisma {
     id?: string
     queueNumber: number
     status?: $Enums.QueueStatus
+    queueType?: $Enums.QueueType
     visitorId: string
     adminId?: string | null
     startTime?: Date | string | null
@@ -11983,6 +12088,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     queueNumber?: IntFieldUpdateOperationsInput | number
     status?: EnumQueueStatusFieldUpdateOperationsInput | $Enums.QueueStatus
+    queueType?: EnumQueueTypeFieldUpdateOperationsInput | $Enums.QueueType
     startTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -11998,6 +12104,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     queueNumber?: IntFieldUpdateOperationsInput | number
     status?: EnumQueueStatusFieldUpdateOperationsInput | $Enums.QueueStatus
+    queueType?: EnumQueueTypeFieldUpdateOperationsInput | $Enums.QueueType
     visitorId?: StringFieldUpdateOperationsInput | string
     adminId?: NullableStringFieldUpdateOperationsInput | string | null
     startTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -12013,6 +12120,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     queueNumber?: IntFieldUpdateOperationsInput | number
     status?: EnumQueueStatusFieldUpdateOperationsInput | $Enums.QueueStatus
+    queueType?: EnumQueueTypeFieldUpdateOperationsInput | $Enums.QueueType
     visitorId?: StringFieldUpdateOperationsInput | string
     adminId?: NullableStringFieldUpdateOperationsInput | string | null
     startTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -12028,6 +12136,7 @@ export namespace Prisma {
     id?: string
     queueNumber: number
     status?: $Enums.QueueStatus
+    queueType?: $Enums.QueueType
     serviceId: string
     adminId?: string | null
     startTime?: Date | string | null
@@ -12043,6 +12152,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     queueNumber?: IntFieldUpdateOperationsInput | number
     status?: EnumQueueStatusFieldUpdateOperationsInput | $Enums.QueueStatus
+    queueType?: EnumQueueTypeFieldUpdateOperationsInput | $Enums.QueueType
     startTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -12058,6 +12168,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     queueNumber?: IntFieldUpdateOperationsInput | number
     status?: EnumQueueStatusFieldUpdateOperationsInput | $Enums.QueueStatus
+    queueType?: EnumQueueTypeFieldUpdateOperationsInput | $Enums.QueueType
     serviceId?: StringFieldUpdateOperationsInput | string
     adminId?: NullableStringFieldUpdateOperationsInput | string | null
     startTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -12073,6 +12184,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     queueNumber?: IntFieldUpdateOperationsInput | number
     status?: EnumQueueStatusFieldUpdateOperationsInput | $Enums.QueueStatus
+    queueType?: EnumQueueTypeFieldUpdateOperationsInput | $Enums.QueueType
     serviceId?: StringFieldUpdateOperationsInput | string
     adminId?: NullableStringFieldUpdateOperationsInput | string | null
     startTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null

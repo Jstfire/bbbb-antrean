@@ -152,6 +152,7 @@ exports.Prisma.QueueScalarFieldEnum = {
   id: 'id',
   queueNumber: 'queueNumber',
   status: 'status',
+  queueType: 'queueType',
   visitorId: 'visitorId',
   serviceId: 'serviceId',
   adminId: 'adminId',
@@ -221,6 +222,11 @@ exports.QueueStatus = exports.$Enums.QueueStatus = {
   SERVING: 'SERVING',
   COMPLETED: 'COMPLETED',
   CANCELED: 'CANCELED'
+};
+
+exports.QueueType = exports.$Enums.QueueType = {
+  ONLINE: 'ONLINE',
+  OFFLINE: 'OFFLINE'
 };
 
 exports.Prisma.ModelName = {

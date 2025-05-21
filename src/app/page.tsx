@@ -107,8 +107,11 @@ export default function Home() {
               </form>
             </Form>
           </CardContent>
-          <CardFooter className="flex justify-center text-muted-foreground text-sm">
-            <p>Silakan login untuk mengakses sistem</p>
+          <CardFooter className="flex flex-col items-center space-y-3">
+            <p className="text-muted-foreground text-sm">Silakan login untuk mengakses sistem</p>
+            <Button variant="link" className="text-primary underline" onClick={() => router.push('/queue-display')}>
+              Lihat Tampilan Antrean
+            </Button>
           </CardFooter>
         </Card>
       </div>

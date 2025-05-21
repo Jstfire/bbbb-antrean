@@ -93,6 +93,13 @@ export default function NotificationsDropdown() {
         }
     };
 
+    const formatNotificationMessage = (message: string): string => {
+        // Match patterns like: #5-1605 or #12-2305
+        return message.replace(/#(\d+)-(\d{2})(\d{2})/g, (match) => {
+            return match; // For now, return as is since it's already formatted
+        });
+    };
+
     // Format notification time
     const formatTime = (dateString: string) => {
         const date = new Date(dateString);
@@ -233,7 +240,7 @@ export default function NotificationsDropdown() {
                                         )}
                                     </span>
                                 </div>
-                                <p className="text-muted-foreground text-sm">{notification.message}</p>
+                                <p className="text-muted-foreground text-sm">{formatNotificationMessage(notification.message)}</p>
                             </div>
                         </DropdownMenuItem>
                     ))

@@ -14,10 +14,19 @@ import { QueueStatus } from "@/generated/prisma";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, RefreshCw, Search } from "lucide-react";
 import TableSkeleton from "@/components/ui/table-skeleton";
 
+// Format queue time to DDMM format (eg. 1405 for May 14) 
+const formatQueueTime = (isoDateString: string): string => {
+    const date = new Date(isoDateString);
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0"); // Month is 0-indexed, so add 1
+    return `${day}${month}`;
+};
+
 interface Queue {
     id: string;
     queueNumber: number;
     status: QueueStatus;
+    queueType: string;
     createdAt: string;
     startTime: string | null;
     endTime: string | null;
@@ -279,12 +288,11 @@ export default function AllQueuesPage() {
     const paginatedQueues = useMemo(() => {
         const startIndex = (currentPage - 1) * pageSize;
         return filteredQueues.slice(startIndex, startIndex + pageSize);
-    }, [filteredQueues, currentPage, pageSize]);
-
-    const sortableColumns = [
+    }, [filteredQueues, currentPage, pageSize]); const sortableColumns = [
         { id: "queueNumber", label: "No. Antrean" },
         { id: "visitorName", label: "Nama Pengunjung" },
         { id: "serviceName", label: "Layanan" },
+        { id: "queueType", label: "Tipe" },
         { id: "status", label: "Status" },
         { id: "createdAt", label: "Waktu Dibuat" },
         { id: "filledSKD", label: "Status SKD" },
@@ -435,10 +443,31 @@ export default function AllQueuesPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {paginatedQueues.map((queue) => (
-                                        <TableRow key={queue.id}>
-                                            <TableCell className="font-medium">{queue.queueNumber}</TableCell>
+                                        <TableRow key={queue.id}>                                            <TableCell className="font-medium">{queue.queueNumber}-{formatQueueTime(queue.createdAt)}</TableCell>
                                             <TableCell>{queue.visitor.name}</TableCell>
                                             <TableCell>{queue.service.name}</TableCell>
+                                            <TableCell>
+                                                {queue.queueType === "ONLINE" ? (
+                                                    <span className="inline-flex items-center bg-blue-50 px-2 py-1 rounded-full ring-1 ring-blue-600/20 ring-inset font-medium text-blue-700 text-xs">
+                                                        Online
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center bg-green-50 px-2 py-1 rounded-full ring-1 ring-green-600/20 ring-inset font-medium text-green-700 text-xs">
+                                                        Offline
+                                                    </span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
+                                                {queue.queueType === "ONLINE" ? (
+                                                    <span className="inline-flex items-center bg-blue-50 px-2 py-1 rounded-full ring-1 ring-blue-600/20 ring-inset font-medium text-blue-700 text-xs">
+                                                        Online
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center bg-green-50 px-2 py-1 rounded-full ring-1 ring-green-600/20 ring-inset font-medium text-green-700 text-xs">
+                                                        Offline
+                                                    </span>
+                                                )}
+                                            </TableCell>
                                             <TableCell>
                                                 {queue.status === "WAITING" && (
                                                     <span className="inline-flex items-center bg-yellow-50 px-2 py-1 rounded-full ring-1 ring-yellow-600/20 ring-inset font-medium text-yellow-800 text-xs">
@@ -535,10 +564,24 @@ export default function AllQueuesPage() {
                             <DialogTitle>Detail Antrean #{selectedQueue.queueNumber}</DialogTitle>
                         </DialogHeader>
 
-                        <div className="gap-4 grid py-4">
+                        <div className="gap-4 grid py-4">                            <div className="items-center gap-4 grid grid-cols-3">
+                            <Label>Status</Label>
+                            <div className="col-span-2">{getStatusBadge(selectedQueue.status)}</div>
+                        </div>
+
                             <div className="items-center gap-4 grid grid-cols-3">
-                                <Label>Status</Label>
-                                <div className="col-span-2">{getStatusBadge(selectedQueue.status)}</div>
+                                <Label>Tipe Antrean</Label>
+                                <div className="col-span-2">
+                                    {selectedQueue.queueType === "ONLINE" ? (
+                                        <span className="inline-flex items-center bg-blue-50 px-2 py-1 rounded-full ring-1 ring-blue-600/20 ring-inset font-medium text-blue-700 text-xs">
+                                            Online
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center bg-green-50 px-2 py-1 rounded-full ring-1 ring-green-600/20 ring-inset font-medium text-green-700 text-xs">
+                                            Offline
+                                        </span>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="items-center gap-4 grid grid-cols-3">

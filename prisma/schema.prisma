@@ -60,10 +60,16 @@ model Visitor {
   queues      Queue[]
 }
 
+enum QueueType {
+  ONLINE
+  OFFLINE
+}
+
 model Queue {
   id           String      @id @default(uuid())
   queueNumber  Int
   status       QueueStatus @default(WAITING)
+  queueType    QueueType   @default(OFFLINE)
   visitorId    String
   visitor      Visitor     @relation(fields: [visitorId], references: [id])
   serviceId    String

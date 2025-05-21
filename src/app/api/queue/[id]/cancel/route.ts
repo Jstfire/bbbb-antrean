@@ -49,6 +49,12 @@ export async function POST(
 				{ status: 403 }
 			);
 		}
+		// Format queue date to DDMM format
+		const formatQueueDate = (date: Date): string => {
+			const day = date.getDate().toString().padStart(2, "0");
+			const month = (date.getMonth() + 1).toString().padStart(2, "0");
+			return `${day}${month}`;
+		};
 
 		// Update queue to canceled status
 		const updatedQueue = await prisma.queue.update({
@@ -68,6 +74,21 @@ export async function POST(
 						name: true,
 					},
 				},
+			},
+		});
+
+		// Create notification for queue cancellation
+		await prisma.notification.create({
+			data: {
+				type: "QUEUE_CANCELED",
+				title: "Antrean Dibatalkan",
+				message: `Antrean #${updatedQueue.queueNumber}-${formatQueueDate(
+					new Date(updatedQueue.createdAt)
+				)} (${
+					updatedQueue.queueType === "ONLINE" ? "Online" : "Offline"
+				}) untuk layanan ${updatedQueue.service.name} telah dibatalkan`,
+				isRead: false,
+				userId: session.user.id,
 			},
 		});
 

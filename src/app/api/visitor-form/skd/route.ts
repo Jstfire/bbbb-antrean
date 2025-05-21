@@ -39,7 +39,11 @@ export async function POST(req: NextRequest) {
 				data: {
 					type: "SKD_FILLED",
 					title: "SKD Diisi",
-					message: `Pengunjung ${updatedQueue.visitor.name} telah mengisi form SKD untuk antrean #${updatedQueue.queueNumber}`,
+					message: `Pengunjung ${
+						updatedQueue.visitor.name
+					} telah mengisi form SKD untuk antrean #${
+						updatedQueue.queueNumber
+					}-${formatQueueDate(new Date(updatedQueue.createdAt))} `,
 					isRead: false,
 				},
 			});
@@ -61,3 +65,8 @@ export async function POST(req: NextRequest) {
 		await prisma.$disconnect();
 	}
 }
+const formatQueueDate = (date: Date): string => {
+	const day = date.getDate().toString().padStart(2, "0");
+	const month = (date.getMonth() + 1).toString().padStart(2, "0");
+	return `${day}${month}`;
+}; // Create notification for staff

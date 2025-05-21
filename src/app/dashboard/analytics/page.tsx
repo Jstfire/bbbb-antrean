@@ -26,6 +26,11 @@ interface AnalyticsData {
         count: number;
         percentage: number;
     }[];
+    queueTypeDistribution: {
+        name: string;
+        count: number;
+        percentage: number;
+    }[];
     adminPerformance: {
         adminName: string;
         completedCount: number;
@@ -314,8 +319,7 @@ export default function AnalyticsPage() {
             {loading ? (
                 <AnalyticsSkeleton />
             ) : analyticsData ? (
-                <div className="space-y-6">
-                    {/* Summary Cards */}
+                <div className="space-y-6">                    {/* Summary Cards */}
                     <div className="gap-4 grid md:grid-cols-2 lg:grid-cols-4">
                         <Card>
                             <CardHeader className="pb-2">
@@ -323,6 +327,16 @@ export default function AnalyticsPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="font-bold text-2xl">{analyticsData.summary.totalVisitors}</div>
+                                {analyticsData.queueTypeDistribution && (
+                                    <div className="flex flex-col gap-1 mt-2 text-muted-foreground text-xs">
+                                        {analyticsData.queueTypeDistribution.map(type => (
+                                            <div key={type.name} className="flex justify-between">
+                                                <span>{type.name}:</span>
+                                                <span className="font-medium">{type.count}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
 
@@ -352,9 +366,7 @@ export default function AnalyticsPage() {
                                 <div className="font-bold text-2xl">{analyticsData.summary.averageServiceTimeMinutes} menit</div>
                             </CardContent>
                         </Card>
-                    </div>
-
-                    {/* Charts */}
+                    </div>{/* Charts */}
                     <div className="gap-4 grid md:grid-cols-2">
                         {/* Service Distribution Pie Chart */}
                         <Card>
@@ -397,6 +409,49 @@ export default function AnalyticsPage() {
                             </CardContent>
                         </Card>
 
+                        {/* Queue Type Distribution Pie Chart */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center">
+                                    <PieChart className="mr-2 w-5 h-5" />
+                                    Tipe Antrean
+                                </CardTitle>
+                                <CardDescription>
+                                    Persentase pengunjung berdasarkan tipe antrean (Online/Offline)
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="h-80">
+                                {analyticsData.queueTypeDistribution && analyticsData.queueTypeDistribution.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <RechartsPieChart>
+                                            <Pie
+                                                data={analyticsData.queueTypeDistribution}
+                                                dataKey="count"
+                                                nameKey="name"
+                                                cx="50%"
+                                                cy="50%"
+                                                outerRadius={80}
+                                                fill="#8884d8"
+                                                label={({ name, percentage }) => `${name}: ${percentage}%`}
+                                            >
+                                                <Cell fill="#0088FE" /> {/* Blue for Online */}
+                                                <Cell fill="#00C49F" /> {/* Green for Offline */}
+                                            </Pie>
+                                            <Tooltip formatter={(value, name, props) => [`${value} pengunjung`, props.payload.name]} />
+                                            <Legend />
+                                        </RechartsPieChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="flex justify-center items-center h-full">
+                                        <p className="text-muted-foreground">Tidak ada data tipe antrean</p>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Admin Performance Bar Chart row */}
+                    <div className="gap-4 grid md:grid-cols-1">
                         {/* Admin Performance Bar Chart */}
                         <Card>
                             <CardHeader>
@@ -429,8 +484,7 @@ export default function AnalyticsPage() {
                                         <p className="text-muted-foreground">Tidak ada data kinerja admin</p>
                                     </div>
                                 )}
-                            </CardContent>
-                        </Card>
+                            </CardContent>                        </Card>
                     </div>
 
                     {/* Daily Trends Chart */}

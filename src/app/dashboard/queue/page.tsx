@@ -19,6 +19,14 @@ import QueueManagementSkeleton from "@/components/ui/queue-management-skeleton";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
+// Format queue time to DDMM format (eg. 1405 for May 14)
+const formatQueueTime = (isoDateString: string): string => {
+    const date = new Date(isoDateString);
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0"); // Month is 0-indexed, so add 1
+    return `${day}${month}`;
+};
+
 interface Queue {
     id: string;
     queueNumber: number;
@@ -29,6 +37,7 @@ interface Queue {
     filledSKD: boolean;
     trackingLink: string | null;
     tempUuid: string | null;
+    queueType: string;
     visitor: {
         name: string;
         phone: string;
@@ -410,24 +419,21 @@ export default function QueueManagementPage() {
         }
 
         return <div className="flex flex-wrap justify-end gap-2">{actions}</div>;
-    };
-
-    const getTableColumns = () => (
+    }; const getTableColumns = () => (
         <>
             <TableHead className="w-16">No</TableHead>
             <TableHead>Nama</TableHead>
             <TableHead>Layanan</TableHead>
+            <TableHead>Tipe</TableHead>
             <TableHead>Waktu</TableHead>
             <TableHead>Status SKD</TableHead>
             <TableHead>Link Tracking</TableHead>
             <TableHead className="text-right">Aksi</TableHead>
         </>
-    );
-
-    // Function to render queue rows
+    );    // Function to render queue rows
     const renderQueueRow = (queue: Queue) => (
         <TableRow key={queue.id}>
-            <TableCell className="font-medium">{queue.queueNumber}</TableCell>
+            <TableCell className="font-medium">{queue.queueNumber}-{formatQueueTime(queue.createdAt)}</TableCell>
             <TableCell>
                 <div>
                     <p>{queue.visitor.name}</p>
@@ -438,6 +444,17 @@ export default function QueueManagementPage() {
                 </div>
             </TableCell>
             <TableCell>{queue.service.name}</TableCell>
+            <TableCell>
+                {queue.queueType === "ONLINE" ? (
+                    <span className="inline-flex items-center bg-blue-50 px-2 py-1 rounded-full ring-1 ring-blue-600/20 ring-inset font-medium text-blue-700 text-xs">
+                        Online
+                    </span>
+                ) : (
+                    <span className="inline-flex items-center bg-green-50 px-2 py-1 rounded-full ring-1 ring-green-600/20 ring-inset font-medium text-green-700 text-xs">
+                        Offline
+                    </span>
+                )}
+            </TableCell>
             <TableCell>
                 <div>
                     <p className="text-muted-foreground text-xs">

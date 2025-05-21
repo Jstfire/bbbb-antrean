@@ -85,13 +85,13 @@ export async function GET(req: NextRequest) {
 				status: "WAITING",
 			},
 		});
-
 		// Prepare queue tracking data
 		const trackingData = {
 			queueNumber: queue.queueNumber,
 			serviceName: queue.service.name,
 			visitorName: queue.visitor.name,
 			status: queue.status,
+			queueType: queue.queueType, // Add queue type to tracking data
 			waitingBefore: waitingQueuesBeforeThis,
 			estimated: waitingQueuesBeforeThis * 10, // Estimated wait in minutes, assuming 10 min per queue
 			createdAt: queue.createdAt,

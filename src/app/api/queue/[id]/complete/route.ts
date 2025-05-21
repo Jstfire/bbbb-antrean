@@ -44,6 +44,12 @@ export async function POST(
 				{ status: 403 }
 			);
 		}
+		// Format queue date to DDMM format
+		const formatQueueDate = (date: Date): string => {
+			const day = date.getDate().toString().padStart(2, "0");
+			const month = (date.getMonth() + 1).toString().padStart(2, "0");
+			return `${day}${month}`;
+		};
 
 		// Update queue to completed status
 		const updatedQueue = await prisma.queue.update({
@@ -63,6 +69,21 @@ export async function POST(
 						name: true,
 					},
 				},
+			},
+		});
+
+		// Create notification for queue completion
+		await prisma.notification.create({
+			data: {
+				type: "QUEUE_COMPLETED",
+				title: "Antrean Selesai",
+				message: `Antrean #${updatedQueue.queueNumber}-${formatQueueDate(
+					new Date(updatedQueue.createdAt)
+				)} (${
+					updatedQueue.queueType === "ONLINE" ? "Online" : "Offline"
+				}) telah selesai dilayani untuk ${updatedQueue.service.name}`,
+				isRead: false,
+				userId: session.user.id, // Assign to the admin who completed it
 			},
 		});
 
